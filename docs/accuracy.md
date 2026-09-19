@@ -118,6 +118,7 @@ smart home held-out file, five out of scope, three with typos, two missing a req
 and one with a number outside the allowed range.
 
 All 31 matched the desktop C tool on both boards. On the Cortex-M33 every confidence was
-identical to all six printed decimals. Per-sentence tables are in
+identical to all six printed decimals. What is checked there is the JSON: the round display
+and the NXP LED have never been verified by eye. Per-sentence tables are in
 [demo/esp32_round/board-results.md](../demo/esp32_round/board-results.md) and
 [demo/nxp_mcxn236/board-results.md](../demo/nxp_mcxn236/board-results.md).
