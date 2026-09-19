@@ -1,13 +1,13 @@
-/* edge-nlu on an NXP FRDM-MCXN236: a Cortex-M33 at 150 MHz, bare metal.
+/* tinycue on an NXP FRDM-MCXN236: a Cortex-M33 at 150 MHz, bare metal.
  *
  * Type a sentence into the debug serial port at 115200. The board reads it with
- * the edge-nlu C runtime and prints one JSON line back. No network, no RTOS, no
+ * the tinycue C runtime and prints one JSON line back. No network, no RTOS, no
  * heap: the model sits in flash and the runtime gets one static scratch buffer.
  *
  * The red LED is the visible signal: it lights while a sentence is being read
  * and stays lit when the answer is unsure or is not a command at all.
  *
- * edgenlu.c, edgenlu.h, model_data.c and model_data.h are copies. The Makefile
+ * tinycue.c, tinycue.h, model_data.c and model_data.h are copies. The Makefile
  * refreshes them from runtime/ and out/device/ before every build.
  */
 
@@ -22,7 +22,7 @@
 #include "fsl_lpuart.h"
 
 #include "board_clock.h"
-#include "edgenlu.h"
+#include "tinycue.h"
 #include "model_data.h"
 
 #define LED_PIN      18U        /* the red LED, active low */
@@ -31,8 +31,8 @@
 #define LINE_BYTES    192
 #define SCRATCH_BYTES 16384
 
-static enlu_model model;
-static enlu_result result;
+static tcue_model model;
+static tcue_result result;
 static uint8_t scratch[SCRATCH_BYTES] __attribute__((aligned(8)));
 
 static char line[LINE_BYTES];
@@ -290,14 +290,14 @@ static void handle(const char *text)
 
     led_set(1);
     started = timer_now();
-    status = enlu_parse(&model, heard, &result, scratch, sizeof scratch);
+    status = tcue_parse(&model, heard, &result, scratch, sizeof scratch);
     parse_cycles = timer_since(started);
 
-    if (status != ENLU_OK) {
+    if (status != TCUE_OK) {
         uart_put("{\"text\":");
         put_json_string(heard);
         uart_put(",\"error\":");
-        put_json_string(enlu_error(status));
+        put_json_string(tcue_error(status));
         uart_put("}\r\n");
         led_set(1);
         return;
@@ -316,15 +316,15 @@ int main(void)
     uart_init();
     timer_init();
 
-    status = enlu_init(&model, enlu_model_data, enlu_model_data_len);
-    if (status != ENLU_OK) {
+    status = tcue_init(&model, tcue_model_data, tcue_model_data_len);
+    if (status != TCUE_OK) {
         uart_put("{\"error\":");
-        put_json_string(enlu_error(status));
+        put_json_string(tcue_error(status));
         uart_put("}\r\n");
         for (;;) {
         }
     }
-    if (enlu_scratch_size(&model) > sizeof scratch) {
+    if (tcue_scratch_size(&model) > sizeof scratch) {
         uart_put("{\"error\":\"scratch too small\"}\r\n");
         for (;;) {
         }
@@ -333,14 +333,14 @@ int main(void)
     uart_put("\r\n{\"ready\":true,\"board\":\"FRDM-MCXN236\",\"core_hz\":");
     put_u32(SystemCoreClock);
     uart_put(",\"model_bytes\":");
-    put_u32((uint32_t)enlu_model_data_len);
+    put_u32((uint32_t)tcue_model_data_len);
     uart_put(",\"scratch\":");
-    put_u32((uint32_t)enlu_scratch_size(&model));
+    put_u32((uint32_t)tcue_scratch_size(&model));
     uart_put(",\"cutoff\":");
-    put_fixed6(enlu_cutoff(&model));
+    put_fixed6(tcue_cutoff(&model));
     uart_put(",\"timer\":");
     uart_put(use_systick ? "\"systick\"" : "\"dwt\"");
-#ifdef ENLU_FAST_EXP
+#ifdef TCUE_FAST_EXP
     uart_put(",\"fast_exp\":true}\r\n");
 #else
     uart_put(",\"fast_exp\":false}\r\n");

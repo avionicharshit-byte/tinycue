@@ -6,13 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from edgenlu.parser import load_spec
+from tinycue.parser import load_spec
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXAMPLE_FILE = REPO_ROOT / "examples/smart_home.yaml"
 ROBOT_FILE = REPO_ROOT / "examples/robot.yaml"
 HELDOUT_FILE = REPO_ROOT / "eval/heldout_smart_home.yaml"
-PACKAGE_DIR = REPO_ROOT / "src/edgenlu"
+PACKAGE_DIR = REPO_ROOT / "src/tinycue"
 
 SMALL_SPEC = """
 language: [en, hinglish]

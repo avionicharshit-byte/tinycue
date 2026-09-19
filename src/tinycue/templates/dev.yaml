@@ -1,0 +1,77 @@
+# {name}.dev.yaml: the dev set, in the same answer-first format.
+#
+#   tinycue doctor {name}.yaml --extra {name}.extra.yaml --dev {name}.dev.yaml
+#
+# This is the set the temperature, the tagger power, the gate weights and the "unsure"
+# cut-off are fitted on. It is never trained on, and markup in it teaches the model
+# nothing, so a dev sentence full of words the model has never met is meant to fail and
+# be reported. That is the point.
+#
+# Two rules, both easy to break by accident:
+#
+#   1. Never copy a sentence from {name}.extra.yaml into here. The numbers go up and the
+#      device gets no better.
+#   2. Cover every command and "none". A dev set missing a command cannot tell you that
+#      command is broken.
+#
+# Aim for 80 or more sentences, in wording you would really use. A dev set that is easier
+# than real speech gives a cut-off that lies. The trainer also fits on roughed up copies
+# of these lines, with carrier words swapped for words nobody has ever written, which is
+# what teaches the confidence what an unfamiliar word costs.
+#
+# Below is a starter set, already in different wording from the extra file. Grow it.
+
+- answer: brew(drink=latte)
+  say:
+    - "i would love a [latte](drink)"
+    - "get a [milk coffee](drink) going"
+
+- answer: brew(drink=latte, cups=2)
+  say:
+    - "two [latte](drink) for the table"
+
+- answer: brew(drink=espresso)
+  say:
+    - "one [espresso](drink) when you can"
+    - "just a [black coffee](drink) for me"
+
+- answer: brew(drink=cappuccino, cups=2)
+  say:
+    - "do [cappuccino](drink) bana do"
+
+- answer: brew(drink=tea, cups=4)
+  say:
+    - "char cup [chai](drink) chahiye"
+    - "four [tea](drink) please"
+
+- answer: brew(drink=tea)
+  say:
+    - "put the [chai](drink) on"
+
+- answer: set_strength(strength=strong)
+  say:
+    - "i need it [stronger](strength) today"
+    - "[kadak](strength) chahiye"
+    - "[extra strong](strength) for me"
+
+- answer: set_strength(strength=mild)
+  say:
+    - "keep it [mild](strength) this time"
+    - "thodi [halki](strength) banana"
+    - "go [weak](strength) on the next one"
+
+- answer: stop_machine
+  say:
+    - "stop right now"
+    - "cancel that"
+    - "abhi band karo"
+    - "forget it"
+
+- answer: none
+  say:
+    - "what time does the shop open"
+    - "i stopped drinking coffee last year"
+    - "the mug fell off the counter"
+    - "chai banane ka tarika batao"
+    - "how strong is the wifi here"
+    - "tell me a joke"

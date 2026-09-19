@@ -1,4 +1,4 @@
-# edge-nlu on an NXP FRDM-MCXN236
+# tinycue on an NXP FRDM-MCXN236
 
 The same model and the same runtime as the ESP32 demo, on a different chip: an
 Arm Cortex-M33 at 150 MHz with 1 MB of flash and 224 KB of RAM. Bare metal, no
@@ -52,12 +52,12 @@ make -C demo/nxp_mcxn236 flash      # writes it over the MCU-Link probe
 `make -C demo/nxp_mcxn236 flash PROBE=<id> TARGET=mcxn236vdf` picks a different
 probe. `pyocd list` prints the ids.
 
-`edgenlu.c`, `edgenlu.h`, `model_data.c` and `model_data.h` in this folder are
+`tinycue.c`, `tinycue.h`, `model_data.c` and `model_data.h` in this folder are
 copies, refreshed from `runtime/` and `out/device/` whenever they change. They
 are build output, not source, so they are not in git.
 
 `FAST_EXP=0` builds the plain double version. The default, `FAST_EXP=1`, passes
-`-DENLU_FAST_EXP` and does the two exponentials in the CRF forward pass in
+`-DTCUE_FAST_EXP` and does the two exponentials in the CRF forward pass in
 single precision. On this chip that is 2.6 times faster, for the same answers to
 six decimals. The M33 has a single precision FPU, so every double is software.
 
@@ -72,7 +72,7 @@ six decimals. The M33 has a single precision FPU, so every double is software.
   build passes `-mfloat-abi=hard -mfpu=fpv5-sp-d16`.
 - LPUART4 on P1_8 and P1_9 at 115200 is the MCU-Link virtual COM port, the same
   port the debugger shows up on.
-- `enlu_parse` is timed with the DWT cycle counter, which is exact at the
+- `tcue_parse` is timed with the DWT cycle counter, which is exact at the
   instruction level. If the trace unit is not powered the firmware falls back to
   a free running SysTick; the boot banner says which one is in use.
 - The model is a `const` array, so it is read straight out of flash. Only the

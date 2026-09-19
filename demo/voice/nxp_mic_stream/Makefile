@@ -1,4 +1,4 @@
-# edge-nlu voice demo, board side: the FRDM-MCXN236 streams its microphone and
+# tinycue voice demo, board side: the FRDM-MCXN236 streams its microphone and
 # parses the sentences the Mac sends back. Bare metal, same build as
 # demo/nxp_mcxn236.
 #
@@ -40,7 +40,7 @@ CFLAGS := $(CPU) -Os -g3 -Wall -Wextra -ffunction-sections -fdata-sections \
           -DCPU_MCXN236VDF -DSTREAM_BAUD=$(BAUD)U \
           -I. -I$(SHARED) -I$(SDK) -I$(SDK)/drivers -I$(SDK)/periph1 -I$(CMSIS)
 ifeq ($(FAST_EXP),1)
-CFLAGS += -DENLU_FAST_EXP
+CFLAGS += -DTCUE_FAST_EXP
 endif
 
 LDFLAGS := $(CPU) -T$(SDK)/gcc/MCXN236_flash.ld --specs=nano.specs --specs=nosys.specs \
@@ -50,7 +50,7 @@ LDLIBS  := -lm
 DRIVERS := fsl_clock.c fsl_gpio.c fsl_lpuart.c fsl_lpflexcomm.c fsl_spc.c \
            fsl_reset.c fsl_pdm.c fsl_common.c fsl_common_arm.c
 
-SRCS := main.c board_clock.c edgenlu.c model_data.c system_MCXN236.c $(DRIVERS)
+SRCS := main.c board_clock.c tinycue.c model_data.c system_MCXN236.c $(DRIVERS)
 OBJDIR := build/fast$(FAST_EXP)
 OBJS := $(addprefix $(OBJDIR)/,$(SRCS:.c=.o)) $(OBJDIR)/startup_MCXN236.o
 
@@ -60,9 +60,9 @@ vpath %.S $(SDK)/gcc
 all: voice.elf
 
 # The runtime and the model are build inputs, not sources kept here.
-edgenlu.c: $(RUNTIME)/edgenlu.c
+tinycue.c: $(RUNTIME)/tinycue.c
 	cp $< $@
-edgenlu.h: $(RUNTIME)/edgenlu.h
+tinycue.h: $(RUNTIME)/tinycue.h
 	cp $< $@
 model_data.c: $(DEVICE)/model_data.c
 	cp $< $@
@@ -72,10 +72,10 @@ model_data.h: $(DEVICE)/model_data.h
 $(DEVICE)/model_data.c $(DEVICE)/model_data.h:
 	@echo "missing $@: run 'make model' at the repository root first"; exit 1
 
-sync: edgenlu.c edgenlu.h model_data.c model_data.h
+sync: tinycue.c tinycue.h model_data.c model_data.h
 
 $(OBJS): | $(OBJDIR)
-$(OBJDIR)/main.o $(OBJDIR)/edgenlu.o $(OBJDIR)/model_data.o: edgenlu.h model_data.h
+$(OBJDIR)/main.o $(OBJDIR)/tinycue.o $(OBJDIR)/model_data.o: tinycue.h model_data.h
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -94,6 +94,6 @@ flash: voice.elf
 	$(PYOCD) flash -u $(PROBE) -t $(TARGET) $<
 
 clean:
-	rm -rf $(OBJDIR) voice.elf voice.map edgenlu.c edgenlu.h model_data.c model_data.h
+	rm -rf $(OBJDIR) voice.elf voice.map tinycue.c tinycue.h model_data.c model_data.h
 
 .PHONY: all sync flash clean

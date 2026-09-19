@@ -1,0 +1,26 @@
+! Terminal colours for the recorded demo, so docs/assets/demo.svg sits in the same family
+! as the other README pictures: a neutral dark slab that works on either GitHub theme, the
+! violet accent on the prompt, green for sure, amber for unsure. Fed to svg-term-cli by
+! `make demo-svg` as --term xresources --profile.
+
+*.foreground:  #c3cad6
+*.background:  #161b22
+*.cursorColor: #9b85ff
+*.colorBD:     #f0f2f6
+
+*.color0:      #22272e
+*.color1:      #f47067
+*.color2:      #4ade80
+*.color3:      #fbbf24
+*.color4:      #79a9ff
+*.color5:      #9b85ff
+*.color6:      #56d4dd
+*.color7:      #c3cad6
+*.color8:      #6b7280
+*.color9:      #ff8a80
+*.color10:     #86efac
+*.color11:     #fcd34d
+*.color12:     #a5c8ff
+*.color13:     #b9a6ff
+*.color14:     #7ee3ea
+*.color15:     #f0f2f6

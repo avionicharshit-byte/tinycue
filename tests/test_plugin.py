@@ -8,7 +8,7 @@ from conftest import REPO_ROOT
 
 MARKETPLACE = REPO_ROOT / ".claude-plugin/marketplace.json"
 PLUGIN = REPO_ROOT / ".claude-plugin/plugin.json"
-SKILL = REPO_ROOT / "skills/edge-nlu/SKILL.md"
+SKILL = REPO_ROOT / "skills/tinycue/SKILL.md"
 
 # The skill is read into a context window on every use, so it has to stay short.
 MAX_LINES = 250
@@ -16,9 +16,9 @@ MAX_LINES = 250
 
 def test_the_marketplace_lists_the_plugin():
     data = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
-    assert data["name"] == "edge-nlu"
+    assert data["name"] == "tinycue"
     assert data["description"]
-    assert [p["name"] for p in data["plugins"]] == ["edge-nlu"]
+    assert [p["name"] for p in data["plugins"]] == ["tinycue"]
     assert data["plugins"][0]["source"] == "./"
 
 
@@ -34,7 +34,7 @@ def test_the_skill_has_front_matter_with_a_name_and_a_description():
     text = SKILL.read_text(encoding="utf-8")
     assert text.startswith("---\n")
     front = text.split("---", 2)[1]
-    assert "name: edge-nlu" in front
+    assert "name: tinycue" in front
     assert "description:" in front
     # The description is what decides whether the skill is ever picked up.
     assert "offline" in front and "microcontroller" in front
@@ -46,9 +46,9 @@ def test_the_skill_stays_short():
 
 def test_the_skill_teaches_the_whole_loop():
     text = SKILL.read_text(encoding="utf-8")
-    for command in ("edgenlu check", "edgenlu train", "edgenlu doctor", "edgenlu export"):
+    for command in ("tinycue check", "tinycue train", "tinycue doctor", "tinycue export"):
         assert command in text, command
-    for topic in ("answer: ", "unknown_words", "unsure", "enlu_parse", "--dev"):
+    for topic in ("answer: ", "unknown_words", "unsure", "tcue_parse", "--dev"):
         assert topic in text, topic
 
 

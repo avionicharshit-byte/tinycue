@@ -1,12 +1,12 @@
 {
-  "name": "edge-nlu",
+  "name": "tinycue",
   "version": "0.1.0",
   "description": "Agent skill for building an offline command parser that fits on a microcontroller.",
   "author": {
     "name": "Harshit Dev",
     "url": "https://github.com/avionicharshit-byte"
   },
-  "homepage": "https://github.com/avionicharshit-byte/edge-nlu",
-  "repository": "https://github.com/avionicharshit-byte/edge-nlu",
+  "homepage": "https://github.com/avionicharshit-byte/tinycue",
+  "repository": "https://github.com/avionicharshit-byte/tinycue",
   "license": "Apache-2.0"
 }

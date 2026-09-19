@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from edgenlu.numbers import (
+from tinycue.numbers import (
     DIGITS,
     ENGLISH,
     HINDI,
@@ -118,7 +118,7 @@ def test_composed_hindi_numbers(text, value):
 
 
 def test_hindi_spellings_never_collide():
-    from edgenlu.numbers import ENGLISH_NUMBER_WORDS, HINDI_SPELLINGS
+    from tinycue.numbers import ENGLISH_NUMBER_WORDS, HINDI_SPELLINGS
 
     seen = {}
     for value, words in HINDI_SPELLINGS.items():

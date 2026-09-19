@@ -1,6 +1,6 @@
-# edge-nlu example commands file: a small floor robot with a gripper.
+# tinycue example commands file: a small floor robot with a gripper.
 #
-# This file exists to show that nothing in edge-nlu is tied to one domain. It shares no
+# This file exists to show that nothing in tinycue is tied to one domain. It shares no
 # words with examples/smart_home.yaml, and it is trained and measured the same way.
 #
 # Markup in examples: [spoken words](slot_name)

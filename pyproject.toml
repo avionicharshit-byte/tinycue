@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "edge-nlu"
+name = "tinycue"
 version = "0.1.0"
 description = "Offline command understanding for tiny devices, under 1 MB"
 readme = "README.md"
@@ -33,10 +33,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/avionicharshit-byte/edge-nlu"
-Repository = "https://github.com/avionicharshit-byte/edge-nlu"
-Issues = "https://github.com/avionicharshit-byte/edge-nlu/issues"
-Documentation = "https://github.com/avionicharshit-byte/edge-nlu/blob/main/docs/install.md"
+Homepage = "https://github.com/avionicharshit-byte/tinycue"
+Repository = "https://github.com/avionicharshit-byte/tinycue"
+Issues = "https://github.com/avionicharshit-byte/tinycue/issues"
+Documentation = "https://github.com/avionicharshit-byte/tinycue/blob/main/docs/install.md"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "hatchling>=1.21"]
@@ -44,23 +44,23 @@ demo = ["pyserial>=3.5"]
 voice = ["pyserial>=3.5", "vosk>=0.3.44", "sounddevice>=0.4"]
 
 [project.scripts]
-edgenlu = "edgenlu.cli:main"
+tinycue = "tinycue.cli:main"
 
 # The wheel carries the package, the language files inside it, and the two C runtime
 # sources. The runtime lives in runtime/ in git and is copied into the wheel from there,
 # so there is exactly one copy under version control.
 [tool.hatch.build.targets.wheel]
-packages = ["src/edgenlu"]
+packages = ["src/tinycue"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"runtime/edgenlu.h" = "edgenlu/runtime/edgenlu.h"
-"runtime/edgenlu.c" = "edgenlu/runtime/edgenlu.c"
+"runtime/tinycue.h" = "tinycue/runtime/tinycue.h"
+"runtime/tinycue.c" = "tinycue/runtime/tinycue.c"
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/edgenlu",
-  "runtime/edgenlu.h",
-  "runtime/edgenlu.c",
+  "src/tinycue",
+  "runtime/tinycue.h",
+  "runtime/tinycue.c",
   "runtime/cli.c",
   "runtime/Makefile",
   "docs",

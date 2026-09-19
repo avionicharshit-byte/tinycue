@@ -11,9 +11,9 @@ from collections import Counter
 import pytest
 
 from conftest import REPO_ROOT
-from edgenlu import answers
-from edgenlu.parser import load_spec
-from edgenlu.schema import NONE_COMMAND
+from tinycue import answers
+from tinycue.parser import load_spec
+from tinycue.schema import NONE_COMMAND
 
 PACKS = [
     ("smart_home", 400, 90),

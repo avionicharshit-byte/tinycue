@@ -1,9 +1,9 @@
 # The demos
 
-Three demos ship with the repo. All three run the same `runtime/edgenlu.c` and a model
+Three demos ship with the repo. All three run the same `runtime/tinycue.c` and a model
 built from [examples/smart_home.yaml](../examples/smart_home.yaml).
 
-All of them build with `-DENLU_FAST_EXP`, which does the two exponentials in the CRF
+All of them build with `-DTCUE_FAST_EXP`, which does the two exponentials in the CRF
 forward pass in single precision. On the Cortex-M33, which has no hardware double, that
 flag is worth 2.6 times for identical answers.
 
@@ -19,7 +19,7 @@ make model && make demo-flash && .venv/bin/python demo/send.py "turn on the bedr
 
 Measured numbers for this board, including the per-sentence table over the 31 test
 sentences, are in [demo/esp32_round/board-results.md](../demo/esp32_round/board-results.md)
-and summarised in the boards table in the [README](../README.md).
+and summarised in the "Tested on" cards in the [README](../README.md).
 
 ## Cortex-M33, bare metal
 

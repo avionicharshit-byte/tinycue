@@ -1,6 +1,6 @@
-// edge-nlu on a classic ESP32 with a 1.28 inch round GC9A01 display.
+// tinycue on a classic ESP32 with a 1.28 inch round GC9A01 display.
 //
-// Type a sentence into the serial port at 115200. The board reads it with the edge-nlu
+// Type a sentence into the serial port at 115200. The board reads it with the tinycue
 // C runtime, prints one JSON line back, and draws the answer on the round screen.
 // No Wi-Fi, no cloud, nothing leaves the board.
 //
@@ -11,7 +11,7 @@
 #include <Adafruit_GC9A01A.h>
 
 extern "C" {
-#include "edgenlu.h"
+#include "tinycue.h"
 #include "model_data.h"
 }
 
@@ -27,8 +27,8 @@ extern "C" {
 
 static Adafruit_GC9A01A tft(TFT_CS, TFT_DC, TFT_RST);
 
-static enlu_model model;
-static enlu_result result;
+static tcue_model model;
+static tcue_result result;
 static uint8_t scratch[SCRATCH_BYTES] __attribute__((aligned(8)));
 static bool ready = false;
 
@@ -141,7 +141,7 @@ static void icon(const char *command, const char *value, int number, bool isNumb
 static void drawIdle() {
   tft.fillScreen(GC9A01A_BLACK);
   ring(1.0f, TRACK, TRACK);
-  centred("edge-nlu", 104, 3, GC9A01A_WHITE);
+  centred("tinycue", 104, 3, GC9A01A_WHITE);
   centred("type a command", 140, 1, GREY);
   centred("offline, on this chip", 156, 1, GREY);
 }
@@ -283,14 +283,14 @@ static void handle(const char *text) {
   heard[sizeof heard - 1] = 0;
 
   started = micros();
-  status = enlu_parse(&model, heard, &result, scratch, sizeof scratch);
+  status = tcue_parse(&model, heard, &result, scratch, sizeof scratch);
   parseMicros = micros() - started;
 
-  if (status != ENLU_OK) {
+  if (status != TCUE_OK) {
     Serial.print("{\"text\":");
     printJsonString(heard);
     Serial.print(",\"error\":");
-    printJsonString(enlu_error(status));
+    printJsonString(tcue_error(status));
     Serial.print(",\"heap\":");
     Serial.print((unsigned long)ESP.getFreeHeap());
     Serial.println('}');
@@ -314,15 +314,15 @@ void setup() {
   tft.begin(27000000);
   tft.fillScreen(GC9A01A_BLACK);
 
-  status = enlu_init(&model, enlu_model_data, enlu_model_data_len);
-  if (status != ENLU_OK) {
+  status = tcue_init(&model, tcue_model_data, tcue_model_data_len);
+  if (status != TCUE_OK) {
     centred("bad model", 112, 2, GC9A01A_RED);
     Serial.print("{\"error\":\"");
-    Serial.print(enlu_error(status));
+    Serial.print(tcue_error(status));
     Serial.println("\"}");
     return;
   }
-  if (enlu_scratch_size(&model) > sizeof scratch) {
+  if (tcue_scratch_size(&model) > sizeof scratch) {
     centred("scratch too small", 112, 1, GC9A01A_RED);
     Serial.println("{\"error\":\"scratch too small\"}");
     return;
@@ -330,9 +330,9 @@ void setup() {
   ready = true;
 
   Serial.print("{\"ready\":true,\"model_bytes\":");
-  Serial.print((unsigned long)enlu_model_data_len);
+  Serial.print((unsigned long)tcue_model_data_len);
   Serial.print(",\"scratch\":");
-  Serial.print((unsigned long)enlu_scratch_size(&model));
+  Serial.print((unsigned long)tcue_scratch_size(&model));
   Serial.print(",\"heap\":");
   Serial.print((unsigned long)ESP.getFreeHeap());
   Serial.println('}');

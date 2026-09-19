@@ -16,7 +16,7 @@ format 2 blob that carries the training vocabulary and the fitted gate.
 | scratch buffer the runtime asked for | 10,744 bytes |
 | free heap, reported by the board | 310,496 bytes, the same at boot and after every sentence |
 
-The board is built with `-DENLU_FAST_EXP` (see `build_opt.h`), which does the two
+The board is built with `-DTCUE_FAST_EXP` (see `build_opt.h`), which does the two
 exponentials inside the forward pass in single precision. That roughly halves the parse
 time on a chip with no hardware double. On all 842 desktop parity sentences the fast
 build gives the same answers as the plain one and the same confidence to six decimals.
@@ -35,7 +35,7 @@ the JSON line now carries and the one extra line on the unsure screen.
 | mean | 5,106 |
 | slowest | 7,866 |
 
-Measured on the board with `micros()` around `enlu_parse` alone, so the serial and the
+Measured on the board with `micros()` around `tcue_parse` alone, so the serial and the
 drawing are not in it. The same model on the desktop CLI averages 6.4 microseconds. The
 mean is 730 microseconds slower than on the format 1 blob, which is the wider vocabulary
 and the unknown word lookup, and still well inside the 10 ms target.

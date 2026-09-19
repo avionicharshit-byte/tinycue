@@ -7,11 +7,11 @@ import json
 import pytest
 
 from conftest import EXAMPLE_FILE
-from edgenlu import model as bundle
-from edgenlu.decode import decode
-from edgenlu.generator import generate
-from edgenlu.parser import load_spec, tokenize
-from edgenlu.train import read_jsonl, split_by_frame, train, write_jsonl
+from tinycue import model as bundle
+from tinycue.decode import decode
+from tinycue.generator import generate
+from tinycue.parser import load_spec, tokenize
+from tinycue.train import read_jsonl, split_by_frame, train, write_jsonl
 
 SMALL_N = 120
 

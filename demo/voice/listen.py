@@ -3,7 +3,7 @@
 
 Speech to text runs here on the Mac, with Vosk, offline. The command
 understanding runs on the chips: the recognised sentence goes to the ESP32,
-which parses it with the edge-nlu runtime and draws the answer on its round
+which parses it with the tinycue runtime and draws the answer on its round
 display, and to the NXP board, which parses it too and sets its red LED.
 
     .venv/bin/python demo/voice/listen.py
@@ -151,8 +151,8 @@ def spec_vocabulary(spec, max_number: int = 180) -> list[str]:
     groups, filler and droppable words, the out-of-scope sentences, and the
     English spelling of every number in range. No domain word is written here.
     """
-    from edgenlu.numbers import english_words
-    from edgenlu.parser import tokenize
+    from tinycue.numbers import english_words
+    from tinycue.parser import tokenize
 
     words: set[str] = set()
 
@@ -408,7 +408,7 @@ def find_port(pattern: str, what: str) -> str:
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="speak to the edge-nlu boards")
+    parser = argparse.ArgumentParser(description="speak to the tinycue boards")
     parser.add_argument("--mic-port", default=None,
                         help="the NXP board streaming audio")
     parser.add_argument("--mic-baud", type=int, default=1000000)
@@ -443,7 +443,7 @@ def main(argv=None) -> int:
 
     vosk.SetLogLevel(-1)
 
-    from edgenlu import load_spec
+    from tinycue import load_spec
 
     model_path = Path(args.model)
     if not model_path.is_dir():

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from edgenlu.decode import decode, spans_from_tags
-from edgenlu.parser import tokenize
-from edgenlu.schema import NONE_COMMAND
+from tinycue.decode import decode, spans_from_tags
+from tinycue.parser import tokenize
+from tinycue.schema import NONE_COMMAND
 
 
 def test_spans_from_tags():

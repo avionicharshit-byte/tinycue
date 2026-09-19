@@ -7,8 +7,8 @@ from collections import Counter
 import pytest
 
 from conftest import EXAMPLE_FILE, HELDOUT_FILE, REPO_ROOT, ROBOT_FILE
-from edgenlu.parser import load_examples_file, load_spec
-from edgenlu.schema import NONE_COMMAND
+from tinycue.parser import load_examples_file, load_spec
+from tinycue.schema import NONE_COMMAND
 
 ROBOT_HELDOUT = REPO_ROOT / "eval/heldout_robot.yaml"
 
@@ -59,7 +59,7 @@ def test_none_block_is_tagged_outside(example_spec):
 
 
 def test_an_unknown_command_in_a_test_file_is_an_error(tmp_path, example_spec):
-    from edgenlu.schema import SpecError
+    from tinycue.schema import SpecError
 
     path = tmp_path / "bad.yaml"
     path.write_text('commands:\n  - name: fly\n    examples: ["fly away"]\n', encoding="utf-8")

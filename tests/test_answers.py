@@ -5,9 +5,9 @@ from __future__ import annotations
 import pytest
 
 from conftest import EXAMPLE_FILE, spans_from_tags
-from edgenlu import answers
-from edgenlu.parser import load_spec
-from edgenlu.schema import NONE_COMMAND, SpecError
+from tinycue import answers
+from tinycue.parser import load_spec
+from tinycue.schema import NONE_COMMAND, SpecError
 
 
 @pytest.fixture

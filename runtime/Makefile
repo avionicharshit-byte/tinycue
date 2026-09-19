@@ -1,21 +1,21 @@
 # Build the desktop command line tool. The runtime itself is two files with no
-# dependencies beyond libc and libm, so a device build just compiles edgenlu.c.
+# dependencies beyond libc and libm, so a device build just compiles tinycue.c.
 CC ?= cc
 CFLAGS ?= -O2 -Wall -Wextra -std=c99 -pedantic
 LDLIBS = -lm
 
-all: enlu_cli
+all: tinycue_cli
 
-enlu_cli: cli.o edgenlu.o
-	$(CC) $(CFLAGS) -o $@ cli.o edgenlu.o $(LDLIBS)
+tinycue_cli: cli.o tinycue.o
+	$(CC) $(CFLAGS) -o $@ cli.o tinycue.o $(LDLIBS)
 
-cli.o: cli.c edgenlu.h
+cli.o: cli.c tinycue.h
 	$(CC) $(CFLAGS) -c -o $@ cli.c
 
-edgenlu.o: edgenlu.c edgenlu.h
-	$(CC) $(CFLAGS) -c -o $@ edgenlu.c
+tinycue.o: tinycue.c tinycue.h
+	$(CC) $(CFLAGS) -c -o $@ tinycue.c
 
 clean:
-	rm -f enlu_cli cli.o edgenlu.o
+	rm -f tinycue_cli cli.o tinycue.o
 
 .PHONY: all clean

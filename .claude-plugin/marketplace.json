@@ -1,5 +1,5 @@
 {
-  "name": "edge-nlu",
+  "name": "tinycue",
   "description": "Agent skill for building an offline command parser that fits on a microcontroller.",
   "owner": {
     "name": "Harshit Dev",
@@ -7,8 +7,8 @@
   },
   "plugins": [
     {
-      "name": "edge-nlu",
-      "description": "Interview the user about their device, write the commands and sentence files, run edgenlu doctor until it is happy, and export the C runtime plus a model blob",
+      "name": "tinycue",
+      "description": "Interview the user about their device, write the commands and sentence files, run tinycue doctor until it is happy, and export the C runtime plus a model blob",
       "source": "./"
     }
   ]

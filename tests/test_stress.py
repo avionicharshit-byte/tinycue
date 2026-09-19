@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import random
 
-from edgenlu import stress
-from edgenlu.schema import Example
+from tinycue import stress
+from tinycue.schema import Example
 
 KNOWN = {"turn", "the", "attic", "lamp", "please", "on"}
 

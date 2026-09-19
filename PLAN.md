@@ -1,4 +1,6 @@
-# edge-nlu (working name)
+# tinycue
+
+The working name of this project was edge-nlu until 2026-09-19.
 
 ## What it is
 
@@ -94,11 +96,11 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
     it instead of a slice of generated data, and it is never trained on. The cut-off rule is now
     the lowest one whose accepted answers are right at least `--cutoff-target` of the time,
     default 0.97, printed with the whole trade-off table.
-  - `edgenlu doctor SPEC --extra F --dev F [--json]`: per command accuracy, confused pairs, slot
+  - `tinycue doctor SPEC --extra F --dev F [--json]`: per command accuracy, confused pairs, slot
     value errors, **words in failing sentences that no training sentence has**, confidently wrong
     sentences, thin commands, and a short list of what to write next. It refuses a file under
     `eval/` named `heldout*` unless told twice.
-  - A Claude Code plugin and skill, `.claude-plugin/` and `skills/edge-nlu/SKILL.md`, that teaches
+  - A Claude Code plugin and skill, `.claude-plugin/` and `skills/tinycue/SKILL.md`, that teaches
     an agent the whole loop.
 
   Measured. 476 extra and 94 dev sentences for the smart home example, 503 and 99 for the robot
@@ -133,10 +135,10 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   folds grouped by source sentence, for a target of 97% accepted accuracy. Blob format
   bumped to 2.
 
-  Three new pieces of tooling came with it: `edgenlu eval` reads an answer-first file
+  Three new pieces of tooling came with it: `tinycue eval` reads an answer-first file
   without needing the spans marked, so a set whose wording the commands file has never
-  listed can still be scored on the command and the slot values; `edgenlu parse --json`
-  and the C tool both report `unknown_share`; and `edgenlu doctor` says in plain words
+  listed can still be scored on the command and the slot values; `tinycue parse --json`
+  and the C tool both report `unknown_share`; and `tinycue doctor` says in plain words
   how honest the confidence is. The held-out guard now also refuses `eval/stranger*`.
 
   Measured on the **held-out** files, once:
@@ -157,14 +159,14 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
 - [x] **M3f**: packaging, so somebody who is not us can install it and get to a working
   device without cloning anything.
 
-  The Python side. `pip install "git+https://github.com/avionicharshit-byte/edge-nlu"`
-  gives a working `edgenlu` command. The wheel carries the language word lists, the
+  The Python side. `pip install "git+https://github.com/avionicharshit-byte/tinycue"`
+  gives a working `tinycue` command. The wheel carries the language word lists, the
   starter templates and both C runtime sources, the last force-included from `runtime/`
   at build time so there is one copy in git and never two that can drift.
-  `edgenlu export --with-runtime` copies `edgenlu.h` and `edgenlu.c` out of the installed
+  `tinycue export --with-runtime` copies `tinycue.h` and `tinycue.c` out of the installed
   package next to the model, which makes the exported folder the whole device side.
-  `edgenlu init NAME` writes three commented starter files for a toy coffee machine, a
-  domain that is neither example, so the domain-free guard still holds. `edgenlu --version`
+  `tinycue init NAME` writes three commented starter files for a toy coffee machine, a
+  domain that is neither example, so the domain-free guard still holds. `tinycue --version`
   and full metadata in `pyproject.toml`.
 
   Proved, not assumed: a wheel built with `uv build`, installed into a throwaway venv
@@ -174,7 +176,7 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   `brew confidence 0.99 unsure 0`. `tests/test_packaging.py` builds a wheel and checks the
   language files, the templates and the runtime sources are in it.
 
-  The Arduino side. `arduino/EdgeNLU/` is a standard library: `library.properties`,
+  The Arduino side. `arduino/TinyCue/` is a standard library: `library.properties`,
   `keywords.txt`, the runtime under `src/` and a board-agnostic `SerialCommands` example
   with the starter model as `model_data.c`. The runtime copies are committed rather than
   synced, because a ZIP download of the repo has to work, so
@@ -189,9 +191,9 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   scratch buffer either. The realistic minimum is a 32 bit MCU with about 300 KB of free
   flash and 12 KB of RAM.
 
-  No wrapper header named `EdgeNLU.h` ships. The runtime header is `edgenlu.h` and macOS
+  No wrapper header named `TinyCue.h` ships. The runtime header is `tinycue.h` and macOS
   filesystems are case insensitive, so the two cannot sit in the same folder. Sketches
-  include `<edgenlu.h>`, which already carries its own `extern "C"` guards.
+  include `<tinycue.h>`, which already carries its own `extern "C"` guards.
 
   Nothing was published: not PyPI, not the Arduino library registry, and the repository
   is still private.
@@ -223,7 +225,7 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   however clearly it is said. So the tool's best feature is invisible through a microphone today.
   It needs a recogniser with a Hindi or code-mixed lexicon, or proxy spellings that an English
   lexicon can reach. Typed Hinglish still works.
-- What to call the project. `edge-nlu` is a working name only.
+- ~~What to call the project.~~ Settled on 2026-09-19: tinycue, everywhere.
 - Licence. Apache-2.0 or MIT; Apache-2.0 is the safer default because of the patent grant.
 - ~~How to handle numbers.~~ Settled in M0 and widened in M1: a table of English and Hindi number
   words covers 0 to 180 in both directions, and composed forms like "ek sau bees" work.

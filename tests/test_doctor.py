@@ -7,12 +7,12 @@ import json
 import pytest
 
 from conftest import EXAMPLE_FILE, REPO_ROOT
-from edgenlu import answers, doctor
-from edgenlu import model as bundle
-from edgenlu.calibrate import TARGET_ACCURACY, cutoff_table
-from edgenlu.cli import main
-from edgenlu.parser import load_spec
-from edgenlu.train import train
+from tinycue import answers, doctor
+from tinycue import model as bundle
+from tinycue.calibrate import TARGET_ACCURACY, cutoff_table
+from tinycue.cli import main
+from tinycue.parser import load_spec
+from tinycue.train import train
 
 SMALL_N = 150
 
@@ -200,7 +200,7 @@ def test_training_refuses_a_held_out_file_as_extra_sentences(tmp_path, capsys):
 
 def test_the_guard_can_be_turned_off_on_purpose(tmp_path):
     """The guard is a seatbelt, not a lock. It has to be possible to mean it."""
-    from edgenlu.cli import _guard_heldout
+    from tinycue.cli import _guard_heldout
 
     _guard_heldout([REPO_ROOT / "eval/heldout_robot.yaml"], allow=True)
 
@@ -248,11 +248,11 @@ def test_training_refuses_a_stranger_file_as_extra_sentences(tmp_path, capsys):
 
 def test_the_doctor_report_says_how_honest_the_confidence_is(files, tmp_path):
     """The gate block is what tells a reader the cut-off is not a guess."""
-    from edgenlu import doctor as doctor_report
-    from edgenlu import model as bundle
-    from edgenlu.cli import _spec_with_extras
-    from edgenlu.train import train
-    from edgenlu import answers as answer_files
+    from tinycue import doctor as doctor_report
+    from tinycue import model as bundle
+    from tinycue.cli import _spec_with_extras
+    from tinycue.train import train
+    from tinycue import answers as answer_files
 
     extra, dev = files
     spec = _spec_with_extras(EXAMPLE_FILE, [extra])

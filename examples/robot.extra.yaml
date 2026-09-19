@@ -5,7 +5,7 @@
 # it reaches the gazetteer, decoding and the exported blob, and the generator then uses
 # it everywhere.
 #
-#   edgenlu train examples/robot.yaml --extra examples/robot.extra.yaml \
+#   tinycue train examples/robot.yaml --extra examples/robot.extra.yaml \
 #       --dev examples/robot.dev.yaml -o out/model
 #
 # stop, grab and release carry no slots at all, so the only thing that can help them is

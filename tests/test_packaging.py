@@ -14,18 +14,18 @@ import zipfile
 import pytest
 
 from conftest import PACKAGE_DIR, REPO_ROOT
-from edgenlu import __version__, runtime_files, starter
-from edgenlu.cli import main
+from tinycue import __version__, runtime_files, starter
+from tinycue.cli import main
 
 # Paths that must be inside the wheel, as they are written in it.
 WHEEL_FILES = (
-    "edgenlu/langs/en.yaml",
-    "edgenlu/langs/hinglish.yaml",
-    "edgenlu/templates/commands.yaml",
-    "edgenlu/templates/extra.yaml",
-    "edgenlu/templates/dev.yaml",
-    "edgenlu/runtime/edgenlu.h",
-    "edgenlu/runtime/edgenlu.c",
+    "tinycue/langs/en.yaml",
+    "tinycue/langs/hinglish.yaml",
+    "tinycue/templates/commands.yaml",
+    "tinycue/templates/extra.yaml",
+    "tinycue/templates/dev.yaml",
+    "tinycue/runtime/tinycue.h",
+    "tinycue/runtime/tinycue.c",
 )
 
 
@@ -56,9 +56,9 @@ def test_the_runtime_sources_are_findable_from_the_package():
 def test_copy_runtime_writes_both_files(tmp_path):
     written = runtime_files.copy_runtime(tmp_path / "device")
     assert [p.name for p in written] == list(runtime_files.SOURCES)
-    header = (tmp_path / "device" / "edgenlu.h").read_text(encoding="utf-8")
-    assert "enlu_parse" in header
-    assert header == (REPO_ROOT / "runtime" / "edgenlu.h").read_text(encoding="utf-8")
+    header = (tmp_path / "device" / "tinycue.h").read_text(encoding="utf-8")
+    assert "tcue_parse" in header
+    assert header == (REPO_ROOT / "runtime" / "tinycue.h").read_text(encoding="utf-8")
 
 
 def test_export_offers_with_runtime(capsys):
@@ -68,14 +68,14 @@ def test_export_offers_with_runtime(capsys):
     assert "--with-runtime" in capsys.readouterr().out
 
 
-# ------------------------------------------------------------ edgenlu init
+# ------------------------------------------------------------ tinycue init
 
 
 def test_init_writes_three_files(tmp_path, capsys):
     assert main(["init", "coffee", "-d", str(tmp_path)]) == 0
     names = sorted(p.name for p in tmp_path.iterdir())
     assert names == ["coffee.dev.yaml", "coffee.extra.yaml", "coffee.yaml"]
-    assert "edgenlu train" in capsys.readouterr().out
+    assert "tinycue train" in capsys.readouterr().out
 
 
 def test_init_puts_the_name_in_the_comments(tmp_path):
@@ -107,8 +107,8 @@ def test_the_starter_files_pass_check(tmp_path, capsys):
 
 
 def test_the_starter_dev_file_loads_against_the_starter_spec(tmp_path):
-    from edgenlu import answers
-    from edgenlu.parser import load_spec
+    from tinycue import answers
+    from tinycue.parser import load_spec
 
     assert main(["init", "coffee", "-d", str(tmp_path)]) == 0
     spec_path, extra, dev = starter.targets("coffee", tmp_path)
@@ -160,7 +160,7 @@ def test_the_wheel_carries_the_language_and_runtime_files(wheel):
 
 def test_the_wheel_carries_every_language_file_in_the_source_tree(wheel):
     for path in sorted((PACKAGE_DIR / "langs").glob("*.yaml")):
-        assert f"edgenlu/langs/{path.name}" in wheel
+        assert f"tinycue/langs/{path.name}" in wheel
 
 
 def test_the_runtime_copy_in_the_wheel_is_not_in_git():

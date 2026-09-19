@@ -8,22 +8,22 @@ on the device. You need the first to get the second.
 Python 3.10 or newer. It is not on PyPI yet, so install it from git:
 
 ```sh
-pip install "git+https://github.com/avionicharshit-byte/edge-nlu"
+pip install "git+https://github.com/avionicharshit-byte/tinycue"
 ```
 
 Or from a checkout, which is what you want if you are going to change it:
 
 ```sh
-git clone https://github.com/avionicharshit-byte/edge-nlu && cd edge-nlu
+git clone https://github.com/avionicharshit-byte/tinycue && cd tinycue
 uv venv --python 3.12
 uv pip install -e ".[dev]"
 ```
 
-Either way you get an `edgenlu` command:
+Either way you get a `tinycue` command:
 
 ```sh
-$ edgenlu --version
-edgenlu 0.1.0
+$ tinycue --version
+tinycue 0.1.0
 ```
 
 The wheel carries the language word lists, the starter templates and the two C runtime
@@ -38,7 +38,7 @@ Run this in an empty folder. It works with nothing installed but the pip package
 ### 1. Write the starter files
 
 ```sh
-$ edgenlu init coffee
+$ tinycue init coffee
 wrote:
   coffee.yaml
   coffee.extra.yaml
@@ -53,7 +53,7 @@ three are meant to be replaced with your own device.
 ### 2. Check what you wrote
 
 ```sh
-$ edgenlu check coffee.yaml --extra coffee.extra.yaml
+$ tinycue check coffee.yaml --extra coffee.extra.yaml
 coffee.yaml: ok
 extra sentences: coffee.extra.yaml
 languages: en, hinglish
@@ -77,7 +77,7 @@ for a train to fail.
 ### 3. Train
 
 ```sh
-$ edgenlu train coffee.yaml --extra coffee.extra.yaml --dev coffee.dev.yaml -o out/model
+$ tinycue train coffee.yaml --extra coffee.extra.yaml --dev coffee.dev.yaml -o out/model
 ...
   chosen cut-off 0.888 sits between two rows of this table
 bundle:
@@ -95,7 +95,7 @@ caught. The default target is 97% of accepted answers right.
 ### 4. Ask the doctor what to write next
 
 ```sh
-$ edgenlu doctor coffee.yaml --extra coffee.extra.yaml --dev coffee.dev.yaml
+$ tinycue doctor coffee.yaml --extra coffee.extra.yaml --dev coffee.dev.yaml
 25 dev sentences against 6000 training sentences made of 451 different words
 
 full command accuracy 76.0%, command right 84.0%, slot f1 87.2%, ece 0.235
@@ -117,26 +117,26 @@ accuracy comes from.
 ### 5. Read a sentence
 
 ```sh
-$ edgenlu parse out/model "make me two lattes"
+$ tinycue parse out/model "make me two lattes"
 brew(cups=2, drink=latte) confidence=0.99
-$ edgenlu parse out/model "teen cup chai bana do"
+$ tinycue parse out/model "teen cup chai bana do"
 brew(cups=3, drink=tea) confidence=0.98
-$ edgenlu parse out/model "i want it milder"
+$ tinycue parse out/model "i want it milder"
 set_strength(strength=mild) confidence=0.99
-$ edgenlu parse out/model "who won the match last night"
+$ tinycue parse out/model "who won the match last night"
 none confidence=0.98
 ```
 
 ### 6. Export for the device
 
 ```sh
-$ edgenlu export out/model -o out/device --with-runtime
+$ tinycue export out/model -o out/device --with-runtime
 wrote out/device/model.bin
   162.0 KB, 4 classes, 7 tags, 16384 buckets
   451 training words, 5 gate weights
   plus model_data.h and model_data.c in out/device
-  plus edgenlu.h
-  plus edgenlu.c
+  plus tinycue.h
+  plus tinycue.c
   out/device now builds on its own: cc -std=c99 *.c your_main.c -lm
 ```
 
@@ -149,61 +149,67 @@ Four files and no dependencies beyond libm:
 
 | file | what it is |
 | --- | --- |
-| `edgenlu.h` | the whole API: `enlu_init`, `enlu_scratch_size`, `enlu_parse` |
-| `edgenlu.c` | the runtime, portable C99 |
-| `model_data.h` | declares `enlu_model_data[]` and its length |
+| `tinycue.h` | the whole API: `tcue_init`, `tcue_scratch_size`, `tcue_parse` |
+| `tinycue.c` | the runtime, portable C99 |
+| `model_data.h` | declares `tcue_model_data[]` and its length |
 | `model_data.c` | the blob as a C array, 8 byte aligned, `const` so it stays in flash |
 
-Add all the `.c` files to your build and include `edgenlu.h`. It already carries
+Add all the `.c` files to your build and include `tinycue.h`. It already carries
 `extern "C"` guards, so C++ can include it straight. A 15 line program is enough to prove
 the folder is self contained:
 
 ```c
 #include <stdio.h>
-#include "edgenlu.h"
+#include "tinycue.h"
 #include "model_data.h"
 
-static enlu_model model;
-static enlu_result out;
+static tcue_model model;
+static tcue_result out;
 static uint8_t scratch[16384] __attribute__((aligned(8)));
 
 int main(void) {
-    if (enlu_init(&model, enlu_model_data, enlu_model_data_len) != ENLU_OK) return 1;
-    if (enlu_parse(&model, "make me two lattes", &out, scratch, sizeof scratch) != ENLU_OK) return 2;
+    if (tcue_init(&model, tcue_model_data, tcue_model_data_len) != TCUE_OK) return 1;
+    if (tcue_parse(&model, "make me two lattes", &out, scratch, sizeof scratch) != TCUE_OK) return 2;
     printf("%s confidence %.2f unsure %d\n", out.command, out.confidence, out.unsure);
     return 0;
 }
 ```
 
 ```sh
-$ cc -std=c99 -Wall -Wextra -pedantic -O2 edgenlu.c model_data.c main.c -lm -o demo
+$ cc -std=c99 -Wall -Wextra -pedantic -O2 tinycue.c model_data.c main.c -lm -o demo
 $ ./demo
 brew confidence 0.99 unsure 0
 ```
 
-Size the scratch buffer with `enlu_scratch_size(&model)` rather than guessing; it reports
+Size the scratch buffer with `tcue_scratch_size(&model)` rather than guessing; it reports
 what this model needs and the call is free. Every entry point returns a negative code on
-refusal and `enlu_error` turns that into a line of text.
+refusal and `tcue_error` turns that into a line of text. Nothing after `tcue_init`
+allocates or opens a file.
+
+Each filled slot carries a `known` flag. It is 0 when the tagger found a value nobody
+listed, and the words come through as text anyway, which is how a name your user invented
+survives. `make cli` builds the same runtime as a desktop tool, which is the quickest way
+to try a blob without flashing anything.
 
 ## The Arduino library
 
-`arduino/EdgeNLU/` in this repository is a standard Arduino library. It is not in the
+`arduino/TinyCue/` in this repository is a standard Arduino library. It is not in the
 Arduino library registry yet, so install it by hand:
 
 - **From a ZIP**: download the repository as a ZIP, unzip it, and copy the
-  `arduino/EdgeNLU` folder into your sketchbook's `libraries` folder, which on macOS is
+  `arduino/TinyCue` folder into your sketchbook's `libraries` folder, which on macOS is
   `~/Documents/Arduino/libraries/`. Restart the IDE.
 - **From a checkout**, with `arduino-cli`:
 
   ```sh
   arduino-cli compile --fqbn esp32:esp32:esp32 \
-      --library arduino/EdgeNLU arduino/EdgeNLU/examples/SerialCommands
+      --library arduino/TinyCue arduino/TinyCue/examples/SerialCommands
   ```
 
 The **SerialCommands** example is board agnostic and needs no display. It reads a line
 from the serial port at 115200 and prints the command, the slot values, the confidence,
 the unsure flag and how many words the model had never seen. It carries the same toy
-coffee machine `edgenlu init` writes, so you can flash it before you have written
+coffee machine `tinycue init` writes, so you can flash it before you have written
 anything. Swap in your own `model_data.c` and `model_data.h` when you have them.
 
 Measured with `arduino-cli 1.5.1` on the example sketch:
@@ -228,12 +234,12 @@ Uno.
 
 If you use Claude Code, the repository is also a plugin. It teaches an agent the whole
 loop: interview you about the device, write the commands file and the sentences, run
-`edgenlu doctor` until the numbers stop moving, and export.
+`tinycue doctor` until the numbers stop moving, and export.
 
 ```
-/plugin marketplace add avionicharshit-byte/edge-nlu
-/plugin install edge-nlu@edge-nlu
+/plugin marketplace add avionicharshit-byte/tinycue
+/plugin install tinycue@tinycue
 ```
 
-The skill on its own is `skills/edge-nlu/SKILL.md`; copy that folder into
+The skill on its own is `skills/tinycue/SKILL.md`; copy that folder into
 `~/.claude/skills/` if you would rather not add the marketplace.

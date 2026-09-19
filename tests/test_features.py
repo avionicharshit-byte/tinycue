@@ -6,8 +6,8 @@ import random
 
 import pytest
 
-from edgenlu import features as F
-from edgenlu.parser import tokenize
+from tinycue import features as F
+from tinycue.parser import tokenize
 
 
 @pytest.mark.parametrize(

@@ -1,10 +1,10 @@
-/* edge-nlu voice demo, board side: stream the microphone and parse sentences.
+/* tinycue voice demo, board side: stream the microphone and parse sentences.
  *
  * An NXP FRDM-MCXN236 (Cortex-M33 at 150 MHz), bare metal. The on-board PDM
  * microphone is captured at 16 kHz, 16 bit mono, and pushed out of the MCU-Link
  * virtual COM port in small framed packets. The Mac runs the speech-to-text and
  * sends the recognised sentence back on the same port; the board reads it with
- * the edge-nlu runtime, answers with one framed JSON line, and sets the red LED.
+ * the tinycue runtime, answers with one framed JSON line, and sets the red LED.
  *
  * The link is full duplex, so audio out and text in do not take turns.
  *
@@ -31,7 +31,7 @@
  * is copied from NXP here except board_clock.c, shared with demo/nxp_mcxn236,
  * which keeps its BSD-3 header.
  *
- * edgenlu.c, edgenlu.h, model_data.c and model_data.h are copies. The Makefile
+ * tinycue.c, tinycue.h, model_data.c and model_data.h are copies. The Makefile
  * refreshes them from runtime/ and out/device/ before every build.
  */
 
@@ -47,7 +47,7 @@
 #include "fsl_pdm.h"
 
 #include "board_clock.h"
-#include "edgenlu.h"
+#include "tinycue.h"
 #include "model_data.h"
 
 #define LED_PIN     18U        /* the red LED, active low */
@@ -88,8 +88,8 @@
 
 /* ------------------------------------------------------------------- state */
 
-static enlu_model model;
-static enlu_result result;
+static tcue_model model;
+static tcue_result result;
 static uint8_t scratch[SCRATCH_BYTES] __attribute__((aligned(8)));
 
 /* Filled by the MICFIL interrupt, drained by the main loop. One producer and
@@ -562,15 +562,15 @@ static void parse_sentence(const char *text)
     heard[sizeof heard - 1] = '\0';
 
     started = timer_now();
-    status = enlu_parse(&model, heard, &result, scratch, sizeof scratch);
+    status = tcue_parse(&model, heard, &result, scratch, sizeof scratch);
     parse_cycles = timer_since(started);
 
-    if (status != ENLU_OK) {
+    if (status != TCUE_OK) {
         json_len = 0;
         jput("{\"text\":");
         jput_string(heard);
         jput(",\"error\":");
-        jput_string(enlu_error(status));
+        jput_string(tcue_error(status));
         jput("}");
         json_send();
         led_set(1);
@@ -675,12 +675,12 @@ static void banner(void)
     jput(",\"packet_samples\":");
     jput_u32(PACKET_SAMPLES);
     jput(",\"model_bytes\":");
-    jput_u32((uint32_t)enlu_model_data_len);
+    jput_u32((uint32_t)tcue_model_data_len);
     jput(",\"cutoff\":");
-    jput_fixed6(enlu_cutoff(&model));
+    jput_fixed6(tcue_cutoff(&model));
     jput(",\"timer\":");
     jput(use_systick ? "\"systick\"" : "\"dwt\"");
-#ifdef ENLU_FAST_EXP
+#ifdef TCUE_FAST_EXP
     jput(",\"fast_exp\":true}");
 #else
     jput(",\"fast_exp\":false}");
@@ -698,13 +698,13 @@ int main(void)
     uart_init();
     timer_init();
 
-    status = enlu_init(&model, enlu_model_data, enlu_model_data_len);
-    if (status != ENLU_OK) {
+    status = tcue_init(&model, tcue_model_data, tcue_model_data_len);
+    if (status != TCUE_OK) {
         for (;;) {
             led_set(1);
         }
     }
-    if (enlu_scratch_size(&model) > sizeof scratch) {
+    if (tcue_scratch_size(&model) > sizeof scratch) {
         for (;;) {
             led_set(1);
         }

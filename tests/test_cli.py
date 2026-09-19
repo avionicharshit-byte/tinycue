@@ -1,4 +1,4 @@
-"""Smoke tests for the edgenlu command line against the example commands file."""
+"""Smoke tests for the tinycue command line against the example commands file."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import json
 import pytest
 
 from conftest import EXAMPLE_FILE
-from edgenlu.cli import main
+from tinycue.cli import main
 
 
 def test_check(capsys):

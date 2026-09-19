@@ -2,13 +2,13 @@
 #
 # This is what the temperature, the tagger power and the "unsure" cut-off are fitted on.
 # It is never trained on, and the markup in it teaches the model nothing: a dev sentence
-# with a word the model has never seen is meant to fail, so that `edgenlu doctor` can
+# with a word the model has never seen is meant to fail, so that `tinycue doctor` can
 # name the word.
 #
 # Nothing here shares a sentence with examples/smart_home.extra.yaml. Same device, other
 # words.
 #
-#   edgenlu doctor examples/smart_home.yaml --extra examples/smart_home.extra.yaml \
+#   tinycue doctor examples/smart_home.yaml --extra examples/smart_home.extra.yaml \
 #       --dev examples/smart_home.dev.yaml
 
 - answer: set_light(room=bedroom, state=on)

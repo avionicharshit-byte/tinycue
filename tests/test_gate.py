@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from edgenlu import gate
-from edgenlu.features import fnv1a
+from tinycue import gate
+from tinycue.features import fnv1a
 
 
 def test_the_vocabulary_is_sorted_and_deduplicated():

@@ -1,9 +1,9 @@
-# How edge-nlu is measured
+# How tinycue is measured
 
 Four test sets, because they answer different questions, and the gaps between them are
 the honest picture of where the tool stands.
 
-- **The generated test split.** `edgenlu train` holds out whole phrasings before it
+- **The generated test split.** `tinycue train` holds out whole phrasings before it
   generates, so no sentence in the test split grew from a phrasing the model trained on.
   This measures how well the model covers variations of wording you did write. When a
   hand-written dev file is given, every generated sentence is trained on instead and
@@ -25,7 +25,7 @@ the honest picture of where the tool stands.
 Both models were trained with
 
 ```sh
-edgenlu train examples/<spec>.yaml --extra examples/<spec>.extra.yaml \
+tinycue train examples/<spec>.yaml --extra examples/<spec>.extra.yaml \
     --dev examples/<spec>.dev.yaml -n 1500 --seed 0 -o out/model
 ```
 
@@ -68,12 +68,28 @@ on an M1 MacBook Air. Nothing was trained on `eval/`.
 Reproduce a column with:
 
 ```sh
-edgenlu eval out/model --data examples/smart_home.dev.yaml --summary
-edgenlu eval out/model --data eval/stranger_smart_home.yaml --summary
+tinycue eval out/model --data examples/smart_home.dev.yaml --summary
+tinycue eval out/model --data eval/stranger_smart_home.yaml --summary
 ```
 
 `--summary` prints the aggregate numbers and never a sentence from the set, which is how
 a set you must not read can still be measured.
+
+## Before the sentence packs
+
+The first numbers on the held-out files, measured before the extra sentence packs of M3d
+were written and before the gate fix of M3e. They are here so the three steps can be read
+end to end; [PLAN.md](../PLAN.md) M3d has the rest of that measurement.
+
+| held-out file | smart home | robot |
+| --- | --- | --- |
+| full command accuracy | 75.7% | 39.8% |
+| sent to unsure | 48.6% | not recorded |
+| wrong answers caught | 85.7% | 94.9% |
+| accepted answers right | 93.2% | 75.0% |
+
+More sentences bought accuracy and cost honesty: accuracy rose to 84.0% and 70.4% while
+wrong answers caught fell to 43.5% and 69.0%. The gate fix below put the honesty back.
 
 ## What the unsure gate fix changed
 
@@ -139,7 +155,7 @@ A dev set written by the same person as the training sentences has almost no unf
 words in it. Only 4% of the words in the smart home dev set appear in no training
 sentence, so a gate fitted on it alone never learns what an unknown word costs.
 
-`edgenlu train` therefore fits the gate on the dev set plus roughed up copies of it:
+`tinycue train` therefore fits the gate on the dev set plus roughed up copies of it:
 three copies of every dev sentence, and one copy of each of 300 sampled generated
 training sentences, with carrier words swapped for pronounceable words nobody has ever
 written, misspelt, or dropped. Words inside a slot span are never touched, so the gold

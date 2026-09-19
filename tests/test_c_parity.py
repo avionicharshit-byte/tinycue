@@ -19,8 +19,8 @@ import subprocess
 import pytest
 
 from conftest import EXAMPLE_FILE, REPO_ROOT, ROBOT_FILE
-from edgenlu import model as bundle
-from edgenlu.export import (
+from tinycue import model as bundle
+from tinycue.export import (
     BLOB_VERSION,
     build_blob,
     crf_tables,
@@ -28,9 +28,9 @@ from edgenlu.export import (
     export,
     fnv1a64,
 )
-from edgenlu.generator import generate
-from edgenlu.parser import load_examples_file, load_spec, tokenize
-from edgenlu.train import train
+from tinycue.generator import generate
+from tinycue.parser import load_examples_file, load_spec, tokenize
+from tinycue.train import train
 
 RUNTIME = REPO_ROOT / "runtime"
 TOLERANCE = 1e-3
@@ -53,7 +53,7 @@ def compiler() -> str | None:
 
 @pytest.fixture(scope="module")
 def cli(tmp_path_factory):
-    """Build enlu_cli, or skip the whole file when there is no C compiler."""
+    """Build tinycue_cli, or skip the whole file when there is no C compiler."""
     found = compiler()
     if found is None:
         pytest.skip("no C compiler on this machine")
@@ -67,9 +67,9 @@ def cli(tmp_path_factory):
             "-std=c99",
             "-pedantic",
             "-o",
-            str(build / "enlu_cli"),
+            str(build / "tinycue_cli"),
             str(RUNTIME / "cli.c"),
-            str(RUNTIME / "edgenlu.c"),
+            str(RUNTIME / "tinycue.c"),
             "-lm",
         ],
         capture_output=True,
@@ -78,7 +78,7 @@ def cli(tmp_path_factory):
     if result.returncode != 0:
         pytest.fail("the C runtime did not build:\n" + result.stderr)
     assert result.stderr.strip() == "", "the C runtime built with warnings:\n" + result.stderr
-    return build / "enlu_cli"
+    return build / "tinycue_cli"
 
 
 @pytest.fixture(scope="module")
@@ -96,11 +96,11 @@ def cli_fast(tmp_path_factory):
             "-Wextra",
             "-std=c99",
             "-pedantic",
-            "-DENLU_FAST_EXP",
+            "-DTCUE_FAST_EXP",
             "-o",
-            str(build / "enlu_cli"),
+            str(build / "tinycue_cli"),
             str(RUNTIME / "cli.c"),
-            str(RUNTIME / "edgenlu.c"),
+            str(RUNTIME / "tinycue.c"),
             "-lm",
         ],
         capture_output=True,
@@ -109,7 +109,7 @@ def cli_fast(tmp_path_factory):
     if result.returncode != 0:
         pytest.fail("the fast build did not build:\n" + result.stderr)
     assert result.stderr.strip() == "", result.stderr
-    return build / "enlu_cli"
+    return build / "tinycue_cli"
 
 
 @pytest.fixture(scope="module")
@@ -251,7 +251,7 @@ def test_c_matches_python(cli, models, name, capsys):
 
 @pytest.mark.parametrize("name", [name for name, _, _ in SPECS])
 def test_the_device_build_answers_the_same(cli, cli_fast, models, name):
-    """ENLU_FAST_EXP is what the ESP32 runs. It must not change a single answer."""
+    """TCUE_FAST_EXP is what the ESP32 runs. It must not change a single answer."""
     entry = models[name]
     texts = sentences(entry)
     slow = run_c(cli, entry["blob"], texts)
@@ -266,7 +266,7 @@ def test_the_device_build_answers_the_same(cli, cli_fast, models, name):
 
 def test_the_blob_starts_with_its_magic(models):
     blob = models["smart_home"]["blob"].read_bytes()
-    assert blob[:4] == b"ENLU"
+    assert blob[:4] == b"TCUE"
     assert int.from_bytes(blob[4:8], "little") == BLOB_VERSION
     assert int.from_bytes(blob[8:12], "little") == len(blob)
 
@@ -287,7 +287,7 @@ def test_every_tagger_feature_hashes_to_its_own_value(models):
 
 def test_a_hash_collision_stops_the_export(monkeypatch, models):
     """The check has to actually fire, so force two features onto one hash."""
-    import edgenlu.export as export_module
+    import tinycue.export as export_module
 
     monkeypatch.setattr(export_module, "fnv1a64", lambda text: 1)
     with pytest.raises(export_module.ExportError, match="same 64 bit value"):
@@ -325,7 +325,7 @@ EXTRA_SURFACE = """
 
 def test_a_surface_taught_by_an_extra_file_reaches_the_c_blob(cli, tmp_path):
     """A word the markup taught has to survive training, export and the device."""
-    from edgenlu import answers
+    from tinycue import answers
 
     spec = load_spec(EXAMPLE_FILE)
     extra = tmp_path / "extra.yaml"
@@ -389,7 +389,7 @@ def test_the_blob_carries_the_gate_weights(models):
 def test_a_gate_weight_naming_a_signal_that_does_not_exist_is_refused(models):
     import copy
 
-    from edgenlu.export import ExportError
+    from tinycue.export import ExportError
 
     model = copy.copy(models["smart_home"]["model"])
     model.calibrator = copy.copy(model.calibrator)

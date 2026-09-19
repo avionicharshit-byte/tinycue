@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from edgenlu.calibrate import (
+from tinycue.calibrate import (
     apply_cutoff,
     choose_cutoff,
     expected_calibration_error,

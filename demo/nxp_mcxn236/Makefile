@@ -1,4 +1,4 @@
-# edge-nlu on an NXP FRDM-MCXN236 (Cortex-M33 at 150 MHz), bare metal.
+# tinycue on an NXP FRDM-MCXN236 (Cortex-M33 at 150 MHz), bare metal.
 #
 # Nothing from the NXP SDK is copied into this repository. The SDK, the CMSIS
 # headers and the Arm toolchain are used where they already sit; point NXP
@@ -34,17 +34,17 @@ CPU  := -mcpu=cortex-m33 -mthumb -mfloat-abi=hard -mfpu=fpv5-sp-d16
 CFLAGS := $(CPU) -Os -g3 -Wall -Wextra -ffunction-sections -fdata-sections \
           -DCPU_MCXN236VDF -I. -I$(SDK) -I$(SDK)/drivers -I$(SDK)/periph1 -I$(CMSIS)
 ifeq ($(FAST_EXP),1)
-CFLAGS += -DENLU_FAST_EXP
+CFLAGS += -DTCUE_FAST_EXP
 endif
 
 LDFLAGS := $(CPU) -T$(SDK)/gcc/MCXN236_flash.ld --specs=nano.specs --specs=nosys.specs \
-           -Wl,--gc-sections -Wl,-Map=edgenlu.map
+           -Wl,--gc-sections -Wl,-Map=tinycue.map
 LDLIBS  := -lm
 
 DRIVERS := fsl_clock.c fsl_gpio.c fsl_lpuart.c fsl_lpflexcomm.c fsl_spc.c \
            fsl_reset.c fsl_common.c fsl_common_arm.c
 
-SRCS := main.c board_clock.c edgenlu.c model_data.c system_MCXN236.c $(DRIVERS)
+SRCS := main.c board_clock.c tinycue.c model_data.c system_MCXN236.c $(DRIVERS)
 # The flag is in the path, so switching it rebuilds instead of reusing objects.
 OBJDIR := build/fast$(FAST_EXP)
 OBJS := $(addprefix $(OBJDIR)/,$(SRCS:.c=.o)) $(OBJDIR)/startup_MCXN236.o
@@ -52,12 +52,12 @@ OBJS := $(addprefix $(OBJDIR)/,$(SRCS:.c=.o)) $(OBJDIR)/startup_MCXN236.o
 vpath %.c $(SDK) $(SDK)/drivers
 vpath %.S $(SDK)/gcc
 
-all: edgenlu.elf
+all: tinycue.elf
 
 # The runtime and the model are build inputs, not sources kept here.
-edgenlu.c: $(RUNTIME)/edgenlu.c
+tinycue.c: $(RUNTIME)/tinycue.c
 	cp $< $@
-edgenlu.h: $(RUNTIME)/edgenlu.h
+tinycue.h: $(RUNTIME)/tinycue.h
 	cp $< $@
 model_data.c: $(DEVICE)/model_data.c
 	cp $< $@
@@ -67,10 +67,10 @@ model_data.h: $(DEVICE)/model_data.h
 $(DEVICE)/model_data.c $(DEVICE)/model_data.h:
 	@echo "missing $@: run 'make model' at the repository root first"; exit 1
 
-sync: edgenlu.c edgenlu.h model_data.c model_data.h
+sync: tinycue.c tinycue.h model_data.c model_data.h
 
 $(OBJS): | $(OBJDIR)
-$(OBJDIR)/main.o $(OBJDIR)/edgenlu.o $(OBJDIR)/model_data.o: edgenlu.h model_data.h
+$(OBJDIR)/main.o $(OBJDIR)/tinycue.o $(OBJDIR)/model_data.o: tinycue.h model_data.h
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -81,14 +81,14 @@ $(OBJDIR)/%.o: %.c
 $(OBJDIR)/%.o: %.S
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-edgenlu.elf: $(OBJS)
+tinycue.elf: $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) $(LDLIBS) -o $@
 	$(SIZE) $@
 
-flash: edgenlu.elf
+flash: tinycue.elf
 	$(PYOCD) flash -u $(PROBE) -t $(TARGET) $<
 
 clean:
-	rm -rf $(OBJDIR) edgenlu.elf edgenlu.map edgenlu.c edgenlu.h model_data.c model_data.h
+	rm -rf $(OBJDIR) tinycue.elf tinycue.map tinycue.c tinycue.h model_data.c model_data.h
 
 .PHONY: all sync flash clean

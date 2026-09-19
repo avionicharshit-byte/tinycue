@@ -5,7 +5,7 @@ what it understood, about a second later.
 
 **Be honest about which part runs where.** The speech to text runs on the Mac,
 with [Vosk](https://alphacephei.com/vosk/), offline. Only the command
-understanding runs on the chips. edge-nlu turns text into a command, slot values
+understanding runs on the chips. tinycue turns text into a command, slot values
 and a confidence; it is not a speech recogniser and this demo does not make it
 one. What the two chips do here is exactly what they do in the other demos: read
 a sentence, answer in under 9 milliseconds.
@@ -79,14 +79,14 @@ display stays there.
 
 [nxp_mic_stream](nxp_mic_stream) is the FRDM-MCXN236 side: bare metal, no RTOS,
 built the same way as [demo/nxp_mcxn236](../nxp_mcxn236) and sharing its
-`board_clock.c`. It carries the whole edge-nlu runtime and model as well as the
+`board_clock.c`. It carries the whole tinycue runtime and model as well as the
 microphone, so it both streams audio and parses sentences.
 
 - MICFIL reads the PDM microphone on **channel 1** at 16 kHz. Channels 0 and 1
   are the two clock edges of one data line, not two microphones, and on this
   board only channel 1 carries bits.
 - The MICFIL interrupt drops samples into a 4096 sample ring buffer, so a
-  5 millisecond `enlu_parse` in the main loop costs no audio. The main loop
+  5 millisecond `tcue_parse` in the main loop costs no audio. The main loop
   drains the ring into packets.
 - A one pole running mean is subtracted from every sample and a fixed gain
   applied, on top of the hardware DC remover.

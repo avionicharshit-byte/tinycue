@@ -2,11 +2,11 @@
 #
 # The temperature, the tagger power and the "unsure" cut-off are fitted on this file.
 # It is never trained on, and its markup teaches the model nothing, so a sentence with a
-# word the model has never seen fails on purpose and `edgenlu doctor` can name the word.
+# word the model has never seen fails on purpose and `tinycue doctor` can name the word.
 #
 # Nothing here shares a sentence with examples/robot.extra.yaml.
 #
-#   edgenlu doctor examples/robot.yaml --extra examples/robot.extra.yaml \
+#   tinycue doctor examples/robot.yaml --extra examples/robot.extra.yaml \
 #       --dev examples/robot.dev.yaml
 
 - answer: move(heading=forward, steps=12)

@@ -5,7 +5,7 @@
 # a value: it goes into the gazetteer, into decoding and into the exported blob, so the
 # generator can then use it in every other sentence.
 #
-#   edgenlu train examples/smart_home.yaml --extra examples/smart_home.extra.yaml \
+#   tinycue train examples/smart_home.yaml --extra examples/smart_home.extra.yaml \
 #       --dev examples/smart_home.dev.yaml -o out/model
 #
 # Nothing here was copied from a test set. The point is variety: different verbs, word

@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 
 from conftest import SMALL_SPEC
-from edgenlu.parser import load_spec, strip_markup, tokenize
-from edgenlu.schema import NUMBER, SpecError
+from tinycue.parser import load_spec, strip_markup, tokenize
+from tinycue.schema import NUMBER, SpecError
 
 
 def test_tokenize_lowercases_and_splits():

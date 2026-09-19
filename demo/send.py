@@ -70,7 +70,7 @@ def read_reply(port: serial.Serial, timeout: float = 4.0) -> dict:
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="talk to the edge-nlu ESP32 demo")
+    parser = argparse.ArgumentParser(description="talk to the tinycue ESP32 demo")
     parser.add_argument("text", nargs="*", help="sentences to send")
     parser.add_argument("-f", "--file", help="a file with one sentence per line")
     parser.add_argument("-p", "--port", default=None, help="serial port")

@@ -1,17 +1,17 @@
 # The commands file
 
-One YAML file is the whole input to `edgenlu`. It names the languages, the kinds of value
+One YAML file is the whole input to `tinycue`. It names the languages, the kinds of value
 your commands carry, the commands themselves with example sentences, and what happens when
 the model is not sure.
 
 Two worked examples ship, from unrelated domains and commented line by line:
 [examples/smart_home.yaml](../examples/smart_home.yaml) and
 [examples/robot.yaml](../examples/robot.yaml). Nothing in the Python package knows about
-either one, and a test fails the build if a domain word ever appears in `src/edgenlu`.
+either one, and a test fails the build if a domain word ever appears in `src/tinycue`.
 
 ## language
 
-A list, such as `[en, hinglish]`. It picks the language files in `src/edgenlu/langs/`,
+A list, such as `[en, hinglish]`. It picks the language files in `src/tinycue/langs/`,
 which supply the filler words, the carrier words the generator may drop, and a base list of
 out-of-scope sentences. `hinglish` means Hindi typed in Latin letters, usually mixed with
 English in the same sentence.
@@ -106,7 +106,7 @@ hand the sentence to a bigger model when there is a network.
 ## Checking it
 
 ```sh
-.venv/bin/edgenlu check examples/smart_home.yaml
+.venv/bin/tinycue check examples/smart_home.yaml
 ```
 
 `check` reads the file, reports anything malformed and prints what it found, before you

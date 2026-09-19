@@ -8,8 +8,8 @@
 /* Cut down from the MCUXpresso Config Tools clock configuration for the
  * FRDM-MCXN236, keeping only the 150 MHz PLL0 setting. */
 
-#ifndef EDGENLU_BOARD_CLOCK_H
-#define EDGENLU_BOARD_CLOCK_H
+#ifndef TINYCUE_BOARD_CLOCK_H
+#define TINYCUE_BOARD_CLOCK_H
 
 #include "fsl_common.h"
 
@@ -26,4 +26,4 @@ void BOARD_BootClockPLL150M(void);
 }
 #endif
 
-#endif /* EDGENLU_BOARD_CLOCK_H */
+#endif /* TINYCUE_BOARD_CLOCK_H */

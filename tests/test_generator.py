@@ -5,9 +5,9 @@ from __future__ import annotations
 from collections import Counter
 
 from conftest import spans_from_tags
-from edgenlu.generator import generate
-from edgenlu.numbers import parse_number
-from edgenlu.schema import NONE_COMMAND, NUMBER, OUTSIDE
+from tinycue.generator import generate
+from tinycue.numbers import parse_number
+from tinycue.schema import NONE_COMMAND, NUMBER, OUTSIDE
 
 
 def test_is_deterministic(example_spec):

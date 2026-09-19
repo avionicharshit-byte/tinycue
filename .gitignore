@@ -27,26 +27,26 @@ out/
 
 # C build output
 runtime/*.o
-runtime/enlu_cli
+runtime/tinycue_cli
 
 # Copies made by make demo-sync
-demo/esp32_round/edgenlu.c
-demo/esp32_round/edgenlu.h
+demo/esp32_round/tinycue.c
+demo/esp32_round/tinycue.h
 demo/esp32_round/model_data.c
 demo/esp32_round/model_data.h
 
 # Copies and build output from the FRDM-MCXN236 demo
-demo/nxp_mcxn236/edgenlu.c
-demo/nxp_mcxn236/edgenlu.h
+demo/nxp_mcxn236/tinycue.c
+demo/nxp_mcxn236/tinycue.h
 demo/nxp_mcxn236/model_data.c
 demo/nxp_mcxn236/model_data.h
 demo/nxp_mcxn236/build/
-demo/nxp_mcxn236/edgenlu.elf
-demo/nxp_mcxn236/edgenlu.map
+demo/nxp_mcxn236/tinycue.elf
+demo/nxp_mcxn236/tinycue.map
 
 # Copies and build output from the voice demo firmware
-demo/voice/nxp_mic_stream/edgenlu.c
-demo/voice/nxp_mic_stream/edgenlu.h
+demo/voice/nxp_mic_stream/tinycue.c
+demo/voice/nxp_mic_stream/tinycue.h
 demo/voice/nxp_mic_stream/model_data.c
 demo/voice/nxp_mic_stream/model_data.h
 demo/voice/nxp_mic_stream/build/
@@ -54,4 +54,4 @@ demo/voice/nxp_mic_stream/voice.elf
 demo/voice/nxp_mic_stream/voice.map
 
 # The wheel build copies the C runtime in here. Never commit the copy.
-src/edgenlu/runtime/
+src/tinycue/runtime/

@@ -1,6 +1,6 @@
 # The model blob
 
-`edgenlu export <bundle> -o <dir>` writes three files:
+`tinycue export <bundle> -o <dir>` writes three files:
 
 - `model.bin`, the whole model as one flat byte string,
 - `model_data.c` and `model_data.h`, the same bytes as a `const unsigned char[]` so they
@@ -9,7 +9,7 @@
 The runtime reads the blob where it lies. Nothing is decompressed, nothing is copied and
 no memory is allocated, so on a microcontroller the weights never reach RAM.
 
-`src/edgenlu/export.py` writes this format and `runtime/edgenlu.c` reads it. Change one
+`src/tinycue/export.py` writes this format and `runtime/tinycue.c` reads it. Change one
 and you change all three.
 
 ## Rules that hold everywhere
@@ -30,7 +30,7 @@ and you change all three.
 
 | at | type | what |
 | --- | --- | --- |
-| 0 | u8[4] | `E` `N` `L` `U` |
+| 0 | u8[4] | `T` `C` `U` `E` |
 | 4 | u32 | format version, 2 today |
 | 8 | u32 | the length of the whole blob |
 | 12 | u32 | how many sections follow |
@@ -44,6 +44,10 @@ Section ids: 1 strings, 2 intent, 3 tagger, 4 commands, 5 numbers, 6 gate.
 Version 2 added the gate section and nothing else. A version 1 blob has no
 training vocabulary in it, so a version 2 runtime refuses it rather than answering
 with a confidence it cannot build.
+
+The magic was `ENLU` while the project was called edge-nlu. It is `TCUE` now, and the
+format version stayed at 2 because nothing about the layout changed. An older blob is
+refused on the magic check, so retrain and re-export after this rename.
 
 ## 1. Strings
 
@@ -67,7 +71,7 @@ in the blob points in here.
 - bias: `f32` per class,
 - weights: `f16`, one row of `table size` per class, classes in order.
 
-The scoring recipe is in `src/edgenlu/features.py`: hash each feature string with
+The scoring recipe is in `src/tinycue/features.py`: hash each feature string with
 FNV-1a 32, add 1.0 to that bucket, divide the vector by its L2 norm, multiply by the
 weight row, add the bias, divide by the temperature and take the softmax.
 
@@ -162,7 +166,7 @@ or `0xFFFFFFFF` for `O`. **Label begins**: `u8` per label, 1 for a `B-` tag.
 
 **Number word record, 8 bytes**: `u32` the word, `i32` its value. Sorted by the word as
 bytes, so a reader binary searches them. English and Hindi words are in the same table,
-which is how `src/edgenlu/numbers.py` holds them.
+which is how `src/tinycue/numbers.py` holds them.
 
 Filler words are `u32` string offsets. They carry no value and are skipped while reading
 a number, which is how "ek sau bees" and "one hundred and twenty" both work.
@@ -207,7 +211,7 @@ The eight signals, in the order this format fixes, with `p` the intent probabili
 
 The confidence is `1 / (1 + exp(-(bias + sum of weight times signal)))`. A blob with no
 gate weights falls back to the old `p * q ** power` from section 4. The scoring recipe,
-the divisor of 5 and the two floors are all in `src/edgenlu/gate.py`.
+the divisor of 5 and the two floors are all in `src/tinycue/gate.py`.
 
 ## What the format does not carry
 

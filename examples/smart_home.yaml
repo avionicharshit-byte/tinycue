@@ -1,4 +1,4 @@
-# edge-nlu example commands file: a small smart home remote.
+# tinycue example commands file: a small smart home remote.
 #
 # This one file is the whole input. You write it by hand, run the trainer, and get back
 # C code plus a model file under 1 MB.

@@ -1,6 +1,6 @@
 """The package must not know about any one domain.
 
-Domain words belong in a commands file. If one of them ever appears in src/edgenlu, the
+Domain words belong in a commands file. If one of them ever appears in src/tinycue, the
 tool has stopped being general and this test says so.
 """
 

@@ -1,0 +1,60 @@
+# {name}.extra.yaml: extra training sentences, written answer first.
+#
+#   tinycue train {name}.yaml --extra {name}.extra.yaml --dev {name}.dev.yaml -o out/model
+#
+# This file is where accuracy comes from. The model has no embeddings, so it knows only
+# words it has been shown. Writing more and more varied sentences here is the whole lever.
+#
+# How it works: write the answer, then write sentences for it. Every line is labelled by
+# construction, so you only mark up a span when you want to teach something new.
+#
+#   - answer: brew(drink=latte, cups=2)
+#     say:
+#       - "two [lattes](drink) please"
+#
+# Markup teaches a NEW way of saying a value. "[flat white](drink)" under a latte answer
+# puts "flat white" into the word list for latte, into decoding and into the exported
+# blob, and the generator then reuses it everywhere else. Without markup the sentence has
+# to contain a way of saying the value that the commands file already lists.
+#
+# A slot you leave out of the answer must simply not appear in the sentence.
+#
+# Aim for 300 or more sentences before you ship. Vary hard: other verbs, other word
+# orders, polite and blunt, short and long, typos, speech-to-text run-ons, both your
+# languages in one sentence, and plenty of "none" near misses that reuse these words.
+# `tinycue doctor` names what to write next.
+#
+# Below are six entries to copy. Delete them once you have your own.
+
+- answer: brew(drink=latte, cups=2)
+  say:
+    - "two [lattes](drink) please"
+    - "make me two [flat whites](drink)"
+    - "do cup [doodh wali coffee](drink) bana dena"
+
+- answer: brew(drink=tea)
+  say:
+    - "a cup of [chai](drink)"
+    - "[cutting chai](drink) bana dena"
+    - "i could really use some [tea](drink)"
+
+- answer: brew(drink=espresso, cups=3)
+  say:
+    - "three [espressos](drink)"
+    - "teen [black coffee](drink) chahiye"
+
+- answer: set_strength(strength=strong)
+  say:
+    - "a bit [punchier](strength) this time"
+    - "zyada [kadak](strength) banao"
+
+- answer: set_strength(strength=mild)
+  say:
+    - "go [easy](strength) on it"
+    - "thodi [patli](strength) rakhna"
+
+- answer: none
+  say:
+    - "my cousin drinks three coffees a day"
+    - "there is a stop sign at the corner"
+    - "chai ki dukaan band ho gayi"

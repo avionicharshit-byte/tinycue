@@ -14,7 +14,7 @@ no new macros.
 
 ## Build
 
-| | with ENLU_FAST_EXP | plain double |
+| | with TCUE_FAST_EXP | plain double |
 | --- | --- | --- |
 | flash image | 289,064 bytes, 27.6% of 1,048,576 | 287,512 bytes, 27.4% |
 | static RAM | 21,032 bytes, 9.2% of 229,376, leaving 208,344 | the same |
@@ -22,7 +22,7 @@ no new macros.
 | scratch buffer the runtime asked for | 10,744 bytes | the same |
 
 `arm-none-eabi-size` reports 288,952 text plus 112 data for the fast build. The
-blob is the bulk of it: `arm-none-eabi-nm` puts `enlu_model_data` at 0x8368 with
+blob is the bulk of it: `arm-none-eabi-nm` puts `tcue_model_data` at 0x8368 with
 a size of 0x3e424, inside the flash region, and `.data` is 104 bytes in total,
 so nothing copies the weights into RAM at startup. Of the 21,032 bytes of static
 RAM, 16,384 are the scratch buffer the firmware hands the runtime, 2,048 are the
@@ -34,17 +34,17 @@ code and the four gate fields the JSON line now carries.
 
 ## Parse time
 
-| | ENLU_FAST_EXP | plain double |
+| | TCUE_FAST_EXP | plain double |
 | --- | --- | --- |
 | fastest of the 31 sentences | 2,524 us | 6,766 us |
 | mean | 5,129 us | 13,248 us |
 | slowest | 8,455 us | 22,903 us |
 
-Timed with the DWT cycle counter around `enlu_parse` alone, so the serial does
+Timed with the DWT cycle counter around `tcue_parse` alone, so the serial does
 not count. The mean is 769,442 cycles for the fast build and 1,987,272 for the
 plain one. The counts repeat exactly run to run, because nothing else runs on
 the chip. The M33 has a single precision FPU only, so every double in the
-forward pass is software: `-DENLU_FAST_EXP`, which does the two exponentials in
+forward pass is software: `-DTCUE_FAST_EXP`, which does the two exponentials in
 the CRF forward pass in single precision, is worth 2.6 times here. Both builds
 were flashed and both were run over the same 31 sentences; the answers and the
 confidences were identical to six decimals.

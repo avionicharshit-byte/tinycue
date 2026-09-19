@@ -1,6 +1,6 @@
-/* enlu_cli: read sentences on standard input, print one JSON line each.
+/* tinycue_cli: read sentences on standard input, print one JSON line each.
  *
- *   enlu_cli model.bin [-r repeats]
+ *   tinycue_cli model.bin [-r repeats]
  *
  * File reading lives here, not in the runtime. The runtime only ever sees the bytes.
  */
@@ -11,7 +11,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "edgenlu.h"
+#include "tinycue.h"
 
 #define LINE_MAX_BYTES 1024
 
@@ -87,8 +87,8 @@ static double now_micros(void)
 
 int main(int argc, char **argv)
 {
-    enlu_model model;
-    enlu_result result;
+    tcue_model model;
+    tcue_result result;
     uint8_t *blob;
     size_t blob_len = 0;
     void *blob_owner = NULL;
@@ -121,14 +121,14 @@ int main(int argc, char **argv)
         fprintf(stderr, "cannot read %s\n", argv[1]);
         return 2;
     }
-    status = enlu_init(&model, blob, blob_len);
-    if (status != ENLU_OK) {
-        fprintf(stderr, "%s: %s\n", argv[1], enlu_error(status));
+    status = tcue_init(&model, blob, blob_len);
+    if (status != TCUE_OK) {
+        fprintf(stderr, "%s: %s\n", argv[1], tcue_error(status));
         free(blob_owner);
         return 2;
     }
 
-    scratch_len = enlu_scratch_size(&model);
+    scratch_len = tcue_scratch_size(&model);
     scratch = aligned_block(scratch_len, &scratch_owner);
     if (scratch == NULL) {
         fprintf(stderr, "out of memory\n");
@@ -148,15 +148,15 @@ int main(int argc, char **argv)
 
         started = now_micros();
         for (i = 0; i < repeats; i++) {
-            status = enlu_parse(&model, line, &result, scratch, scratch_len);
+            status = tcue_parse(&model, line, &result, scratch, scratch_len);
         }
         micros = (now_micros() - started) / (double)repeats;
 
-        if (status != ENLU_OK) {
+        if (status != TCUE_OK) {
             printf("{\"text\":");
             print_json_string(line);
             printf(",\"error\":");
-            print_json_string(enlu_error(status));
+            print_json_string(tcue_error(status));
             printf("}\n");
             fflush(stdout);
             continue;
