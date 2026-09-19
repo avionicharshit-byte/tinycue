@@ -183,6 +183,11 @@ static void drawAnswer() {
     centred(result.command, y + 22, 2, AMBER);
     snprintf(buffer, sizeof buffer, "%d%% sure", (int)(result.confidence * 100 + 0.5));
     centred(buffer, y + 44, 1, AMBER);
+    if (result.unknown_count > 0) {
+      snprintf(buffer, sizeof buffer, "%d new word%s", result.unknown_count,
+               result.unknown_count == 1 ? "" : "s");
+      centred(buffer, y + 58, 1, GREY);
+    }
     return;
   }
 
@@ -253,6 +258,14 @@ static void reply() {
   Serial.print(result.intent_probability, 6);
   Serial.print(",\"slot\":");
   Serial.print(result.slot_probability, 6);
+  Serial.print(",\"margin\":");
+  Serial.print(result.intent_margin, 6);
+  Serial.print(",\"unknown\":");
+  Serial.print((long)result.unknown_count);
+  Serial.print(",\"unknown_share\":");
+  Serial.print(result.unknown_share, 6);
+  Serial.print(",\"all_carrier_unknown\":");
+  Serial.print(result.all_carrier_unknown ? "true" : "false");
   Serial.print(",\"unsure\":");
   Serial.print(result.unsure ? "true" : "false");
   Serial.print(",\"micros\":");
