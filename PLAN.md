@@ -113,12 +113,52 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
 
   On the hand-written dev sets the same models get 93.6% and 95.0% full command accuracy. The gap
   between dev and held-out is the honest measure of how much a dev set flatters itself.
+- [x] **M3e**: an unsure cut-off that holds up on wording nobody wrote.
+
+  The old confidence was the intent probability times the tagger's own probability. Both
+  come from the same hashed n-gram features, so a word the model has never seen
+  contributes nothing and the words it does know decide alone, confidently. The blob now
+  carries the training vocabulary as a sorted array of 32 bit FNV-1a hashes, about 4 KB,
+  and the device counts the words of a sentence it has never seen. A logistic regression
+  over five signals, the intent logit, the tagger's log probability, the unknown word
+  share, a flag for "every word outside a slot span is new" and the gap between the top
+  two commands, gives the chance the whole answer is right, and that is the confidence.
+  Five weights and a bias, in the blob, computed the same way in C.
+
+  The gate is fitted on the hand-written dev set plus roughed up copies of it, where
+  carrier words are swapped for words nobody has ever written, misspelt or dropped and
+  the gold answer is unchanged. The cut-off is then chosen on out-of-fold scores, five
+  folds grouped by source sentence, for a target of 97% accepted accuracy. Blob format
+  bumped to 2.
+
+  Three new pieces of tooling came with it: `edgenlu eval` reads an answer-first file
+  without needing the spans marked, so a set whose wording the commands file has never
+  listed can still be scored on the command and the slot values; `edgenlu parse --json`
+  and the C tool both report `unknown_share`; and `edgenlu doctor` says in plain words
+  how honest the confidence is. The held-out guard now also refuses `eval/stranger*`.
+
+  Measured on the **held-out** files, once:
+
+  | | smart home | robot |
+  |---|---|---|
+  | full command accuracy | 84.0%, unchanged | 70.4%, unchanged |
+  | sent to unsure | 11.8% to **40.3%** | 34.7% to **56.1%** |
+  | wrong answers caught | 43.5% to **82.6%** | 69.0% to **96.6%** |
+  | accepted answers right | 89.8% to **95.3%** | 85.9% to **97.7%** |
+  | ece | 0.066 to **0.063** | 0.160 to **0.076** |
+  | device blob | 245 KB to 249 KB | 290 KB to 294 KB |
+
+  On the **stranger** sets, 139 and 138 sentences written blind by somebody who had never
+  seen the training sentences and which nothing was fitted on, the accepted answers are
+  right 98.1% and 98.2% of the time with 22.3% and 19.6% going to unsure. Every variant
+  that was scored is in `docs/accuracy.md`.
 - [ ] **M4**: README, a Hinglish example pack, and the first release.
 
 ## Numbers to aim for
 
-- Model file under 1 MB. **Met**: the device blob is 245 KB for the smart home example and 290 KB
-  for the robot one, up from 205 KB and 263 KB before the extra sentences widened the vocabulary.
+- Model file under 1 MB. **Met**: the device blob is 249 KB for the smart home example and 294 KB
+  for the robot one, up from 205 KB and 263 KB before the extra sentences widened the vocabulary
+  and the gate added about 4 KB of training word hashes.
   The Python bundle, which keeps float32 weights, is 504 KB and 543 KB.
 - Under 10 ms per command on a classic ESP32. **Met**: 2.5 to 6.5 ms over 31 sentences, mean
   4.4 ms, timed around the parse alone on the real board. Met on an Arm Cortex-M33 too, at
@@ -126,13 +166,11 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   sentence, against 6.6 before, so the board numbers should barely move.
 - Over 95% intent accuracy on held-out phrasing the model has not seen. **Not met, much closer**:
   86.8% on the smart home held-out file and 72.4% on the robot one, from 77% and 43%.
-- The unsure path catches most of the answers that would have been wrong. **Not met, and it went
-  backwards**: 43.5% on the smart home held-out file and 69.0% on the robot one, from 86% and 95%.
-  The cut-off is now fitted on a hand-written dev set rather than generated data, and it lands at
-  0.627 and 0.751 rather than 0.903 and 0.852. Far more answers are accepted, 88% and 65% of them
-  rather than 51% and 12%, and the accepted ones are right 89.8% and 85.9% of the time against a
-  97% target. The dev sets are still easier than the held-out files, so the cut-off fitted on them
-  is too generous. See the open question below.
+- The unsure path catches most of the answers that would have been wrong. **Met on the robot,
+  close on the smart home**: 82.6% on the smart home held-out file and 96.6% on the robot one,
+  up from 43.5% and 69.0%. The accepted answers are right 95.3% and 97.7% of the time against a
+  97% target. What it costs is coverage: 40.3% and 56.1% of that file goes to unsure, against
+  22.3% and 19.6% on the stranger sets, which are ordinary wording. See M3e.
 
 ## Open questions
 
@@ -150,13 +188,15 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   value is not listed, but how often the tagger finds them, and what confidence to report, is
   still unmeasured.
 - ~~How to pick the cut-off on data that looks like the held-out file rather than the generated dev
-  split.~~ Half settled in M3d: `--dev` takes a hand-written set and the cut-off is fitted on that.
-  **What is left is the harder half.** A dev set written by the same person, on the same day, as
-  the training sentences is still easier than one written by someone else: 93.6% and 95.0% on dev
-  against 84.0% and 70.4% on held-out. So the cut-off fitted on dev is too low and only 43.5% and
-  69.0% of wrong answers are caught. Two ideas worth trying: fit the cut-off with a margin, so the
-  dev target is higher than the target you actually want, or hold out a slice of the dev set from
-  the cut-off fit the way the training data is held out from training.
+  split.~~ Settled in M3e. Neither idea written here was the answer on its own. What worked was
+  giving the gate something the two probabilities could not see, whether the sentence uses words
+  the model has never met, and then making the fitting data harder on purpose by roughing up the
+  dev set, so the gate could learn what those words cost. The cut-off is chosen on out-of-fold
+  scores over that harder set, which is where the margin comes from. Raising the target from 0.97
+  to 0.99 buys more caught wrong answers for 6 to 11 points of coverage and is one flag away.
+- **Coverage on awkward wording.** The gate is honest now and the price is that the robot model
+  asks again on 56% of its held-out file. The lever is vocabulary, not the cut-off: the doctor
+  names the words, and writing sentences that use them is what moves it.
 - How to close the gap on unseen wording. M3d moved it a long way with sentences alone, 77% to 87%
   and 43% to 72% on commands, and showed that the lever is vocabulary: `doctor` names words in
   failing sentences that appear nowhere in training, and writing sentences that use them is what

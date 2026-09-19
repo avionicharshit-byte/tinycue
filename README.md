@@ -10,7 +10,8 @@ What you get from one YAML file:
   source. No malloc, no file IO, and the weights are read in place, in flash.
 - An answer in single digit milliseconds on the boards below, 7.5 microseconds on a desktop.
 - A calibrated confidence on every answer, and a tuned cut-off below which the device says
-  "unsure" instead of guessing. Ask again, or hand the sentence to something bigger.
+  "unsure" instead of guessing. Ask again, or hand the sentence to something bigger. The
+  device counts the words of your sentence the model has never seen, and says so.
 - English and Hinglish, Hindi typed in Latin letters, including number words. "10", "ten"
   and "das" all arrive as `10`.
 
@@ -155,31 +156,37 @@ desktop.
 
 ## Accuracy and limits
 
-Two test sets. The **generated split** holds out whole phrasings, so it measures variations
-of wording you did write. The **hand-written held-out files** in `eval/` share no wording
-with the commands file and carry typos, missing slots and synonyms. That is the honest test.
+Two sets nothing is fitted on. The **held-out files** in `eval/heldout_*.yaml` were written
+to be awkward: typos, missing slots, out-of-range numbers and deliberate synonyms. The
+**stranger sets** in `eval/stranger_*.yaml` were written blind by somebody who had never
+seen the training sentences, in plain everyday wording. Both are run with `--summary`, which
+prints the numbers and never a sentence.
 
 <!-- ACCURACY-UPDATE -->
 
-| smart home model | generated split | hand-written held-out |
-| --- | --- | --- |
-| sentences | 1018 | 144 |
-| full command accuracy | 92.7% | 75.7% |
-| sent to unsure | 31.9% | 48.6% |
-| wrong answers caught by the cut-off | 100.0% | 85.7% |
-| accepted answers right | 100.0% | 93.2% |
+| smart home model, held-out file | before the sentence packs | after the packs | after the gate fix |
+| --- | --- | --- | --- |
+| full command accuracy | 75.7% | 84.0% | 84.0% |
+| sent to unsure | 48.6% | 11.8% | 40.3% |
+| wrong answers caught by the cut-off | 85.7% | 43.5% | 82.6% |
+| accepted answers right | 93.2% | 89.8% | 95.3% |
 
-On wording it has never seen the model is not accurate, and the useful part is that it
-knows. The robot example is harder still, at 39.8% full command accuracy on its held-out
-file: its `stop`, `grab` and `release` commands carry no slots, so nothing but the literal
-words identifies them, and that file uses synonyms ("seize", "unclamp") from nowhere in the
-commands file.
+The robot model, on its own held-out file, went the same way: 39.8% to 70.4% full command
+accuracy over the same three steps, with wrong answers caught at 94.9%, then 69.0%, then
+96.6%, and accepted answers right at 75.0%, then 85.9%, then 97.7%. More sentences bought
+accuracy and quietly cost honesty; the gate fix bought the honesty back.
+
+Gating never changes the answer, only whether the device shows it. On the stranger sets,
+ordinary wording written by somebody else, the smart home model gets 96.4% of commands fully
+right, asks again on 22.3% and the answers it accepts are right 98.1% of the time; the robot
+model gets 93.5%, asks again on 19.6% and accepts answers that are right 98.2% of the time.
+The awkward held-out files cost much more coverage: 40.3% and 56.1% go to unsure there.
 
 Three limits. Input is capped at 32 tokens and 256 bytes, and longer input is refused
 rather than truncated. Hinglish is typed only until there is a recogniser with a code-mixed
 lexicon. And the blob is dominated by the hashed feature table, so fewer commands is not
-much smaller, `--table-size` the only knob. Full tables, the other limits and the C versus
-Python parity: [docs/accuracy.md](docs/accuracy.md).
+much smaller, `--table-size` the only knob. Full tables, every variant that was tried, what
+still fails and the C versus Python parity: [docs/accuracy.md](docs/accuracy.md).
 
 ## How it compares
 
@@ -197,10 +204,14 @@ and honest enough about its own confidence to refuse.
 
 ## Roadmap
 
-1. **Accuracy on unseen phrasing.** A training-sentence generator, and an `edgenlu doctor`
-   that catches a thin commands file before you flash it.
-2. **Packaging.** A pip install, and an Arduino library the runtime drops straight into.
-3. **Public release.** A name that is not a working name, and a first tagged version.
+1. ~~**Accuracy on unseen phrasing.** A training-sentence generator, and an `edgenlu doctor`
+   that catches a thin commands file before you flash it.~~ Done. Both ship, and the doctor
+   now says in plain words how honest the confidence is.
+2. ~~**An unsure cut-off that holds up on wording nobody wrote.**~~ Done. The blob carries
+   the training vocabulary, the device counts the words it has never seen, and a handful of
+   fitted weights turn that into the confidence.
+3. **Packaging.** A pip install, and an Arduino library the runtime drops straight into.
+4. **Public release.** A name that is not a working name, and a first tagged version.
 
 ## Development
 
