@@ -17,7 +17,15 @@ import numpy as np
 from .model import softmax
 
 BUCKETS = 10
-TARGET_ACCURACY = 0.99
+
+# How often an accepted answer has to be right. Below this the answer goes to the
+# fallback instead. 0.99 was the old bar and it was fitted on generated data that the
+# model found easy; on wording nobody generated, the same bar sends almost everything to
+# the fallback and the tool stops being useful. 0.97 is the default and it is a flag.
+TARGET_ACCURACY = 0.97
+
+# The cut-offs the trade-off table walks, so the choice can be seen rather than trusted.
+TABLE_STEPS = tuple(round(0.05 * i, 2) for i in range(20))
 
 
 def negative_log_likelihood(scores: np.ndarray, labels: np.ndarray, temperature: float) -> float:
@@ -182,6 +190,16 @@ def _measure(confidences: np.ndarray, correct: np.ndarray, value: float, reached
         total=total,
         reached_target=reached,
     )
+
+
+def cutoff_table(confidences, correct, values=None) -> list[Cutoff]:
+    """What every cut-off on a grid would do, so the trade-off can be read off a table."""
+    confidences = np.asarray(confidences, dtype=np.float64)
+    correct = np.asarray(correct, dtype=bool)
+    if len(confidences) == 0:
+        return []
+    wanted = sorted({float(v) for v in (values if values is not None else TABLE_STEPS)})
+    return [_measure(confidences, correct, value, True) for value in wanted]
 
 
 def apply_cutoff(confidences, correct, value: float) -> Cutoff:

@@ -20,7 +20,14 @@ import numpy as np
 
 from . import features as F
 from . import model as bundle
-from .calibrate import choose_cutoff, fit_slot_power, fit_temperature
+from .calibrate import (
+    TARGET_ACCURACY,
+    Cutoff,
+    choose_cutoff,
+    cutoff_table,
+    fit_slot_power,
+    fit_temperature,
+)
 from .decode import decode
 from .generator import generate
 from .schema import NONE_COMMAND, Example, Spec
@@ -147,6 +154,13 @@ class TrainResult:
     cutoff: object
     seconds: float
     examples: int
+    # Every word the two models were actually shown. Used to spot unknown words.
+    vocabulary: set = field(default_factory=set)
+    # What each cut-off on a grid would have done to the calibration set.
+    trade_off: list = field(default_factory=list)
+    # True when the cut-off was fitted on a hand-written dev file, not the generated split.
+    hand_written_dev: bool = False
+    target: float = TARGET_ACCURACY
 
 
 def train(
@@ -156,29 +170,59 @@ def train(
     seed: int = 0,
     table_size: int = F.DEFAULT_BUCKETS,
     log=print,
+    dev_examples=None,
+    target: float = TARGET_ACCURACY,
 ) -> TrainResult:
-    """Generate, split, fit both models, calibrate and save the bundle."""
+    """Generate, split, fit both models, calibrate and save the bundle.
+
+    With `dev_examples`, the temperature, the tagger power and the cut-off are fitted on
+    that hand-written set instead of the generated dev split, and the generated dev
+    frames go back into training. Nothing in `dev_examples` is ever trained on.
+    """
     started = time.time()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     examples = generate(spec, n_per_command=n_per_command, seed=seed)
     split = split_by_frame(examples, seed=seed)
-    log(
-        f"generated {len(examples)} examples: "
-        f"{len(split.train)} train, {len(split.dev)} dev, {len(split.test)} test"
-    )
+    hand_written = list(dev_examples or [])
+
+    if hand_written:
+        training = split.train + split.dev
+        calibration = hand_written
+        log(
+            f"generated {len(examples)} examples: {len(training)} train, "
+            f"{len(split.test)} test, calibrating on {len(calibration)} hand-written sentences"
+        )
+    else:
+        training = split.train
+        calibration = split.dev
+        log(
+            f"generated {len(examples)} examples: "
+            f"{len(split.train)} train, {len(split.dev)} dev, {len(split.test)} test"
+        )
 
     classes = spec.command_names()
-    weights, bias = train_intent(split.train, classes, table_size, seed=seed)
-    train_slots(split.train, spec, out_dir / bundle.SLOTS_FILE, seed=seed)
+    weights, bias = train_intent(training, classes, table_size, seed=seed)
+    train_slots(training, spec, out_dir / bundle.SLOTS_FILE, seed=seed)
+
+    meta_extra = {
+        "training": {
+            "n_per_command": n_per_command,
+            "seed": seed,
+            "extra_files": list(spec.extra_files),
+            "dev_sentences": len(hand_written),
+            "target_accepted_accuracy": float(target),
+        }
+    }
 
     temperature = 1.0
     cutoff = None
-    if split.dev:
-        scores = _scores(split.dev, weights, bias, table_size)
+    trade_off: list[Cutoff] = []
+    if calibration:
+        scores = _scores(calibration, weights, bias, table_size)
         index = {name: i for i, name in enumerate(classes)}
-        labels = np.array([index[e.command] for e in split.dev])
+        labels = np.array([index[e.command] for e in calibration])
         temperature = fit_temperature(scores, labels)
         log(f"temperature: {temperature:.3f}")
 
@@ -192,32 +236,39 @@ def train(
         1.0,
         table_size,
         unsure_below=0.0,
-        extra={"training": {"n_per_command": n_per_command, "seed": seed}},
+        extra=meta_extra,
     )
 
     loaded = bundle.load(out_dir)
     slot_power = 1.0
-    if split.dev:
-        intent_probabilities, slot_probabilities, correct = _dev_parts(loaded, split.dev, spec)
+    if calibration:
+        intent_probabilities, slot_probabilities, correct = _dev_parts(loaded, calibration, spec)
         slot_power = fit_slot_power(intent_probabilities, slot_probabilities, correct)
         log(f"tagger probability power: {slot_power:.3f}")
         confidences = [
             i * (s ** slot_power) for i, s in zip(intent_probabilities, slot_probabilities)
         ]
-        cutoff = choose_cutoff(confidences, correct)
+        cutoff = choose_cutoff(confidences, correct, target=target)
+        trade_off = cutoff_table(confidences, correct)
+        where = "hand-written dev" if hand_written else "the generated dev split"
         if isinstance(spec.fallback.unsure_below, float):
             chosen = float(spec.fallback.unsure_below)
             log(f"cut-off pinned by the commands file: {chosen:.3f}")
         else:
             chosen = cutoff.value
             log(
-                f"cut-off chosen on dev: {chosen:.3f}, "
+                f"cut-off chosen on {where}: {chosen:.3f}, "
                 f"{cutoff.unsure_rate * 100:.1f}% of inputs go to unsure, "
                 f"{cutoff.wrong_caught * 100:.1f}% of wrong answers caught, "
                 f"accepted answers right {cutoff.accepted_accuracy * 100:.1f}% of the time"
             )
             if not cutoff.reached_target:
-                log("warning: no cut-off reached 99% on dev, so everything goes to unsure")
+                log(
+                    f"warning: no cut-off reached {target * 100:.0f}% on {where}, "
+                    "so everything goes to unsure"
+                )
+        for row in _trade_off_lines(trade_off, chosen, target):
+            log(row)
         bundle.save(
             out_dir,
             spec,
@@ -228,7 +279,7 @@ def train(
             slot_power,
             table_size,
             unsure_below=chosen,
-            extra={"training": {"n_per_command": n_per_command, "seed": seed}},
+            extra=meta_extra,
         )
 
     seconds = time.time() - started
@@ -241,7 +292,30 @@ def train(
         cutoff=cutoff,
         seconds=seconds,
         examples=len(examples),
+        vocabulary={token for e in training for token in e.tokens},
+        trade_off=trade_off,
+        hand_written_dev=bool(hand_written),
+        target=float(target),
     )
+
+
+def _trade_off_lines(rows, chosen: float, target: float) -> list[str]:
+    """The cut-off trade-off as printable lines, so the choice can be seen."""
+    if not rows:
+        return []
+    out = [
+        f"cut-off trade-off (target {target * 100:.0f}% of accepted answers right)",
+        "  cut-off   to unsure   accepted right   wrong caught",
+    ]
+    for row in rows:
+        mark = " <- chosen" if abs(row.value - chosen) < 1e-9 else ""
+        out.append(
+            f"  {row.value:7.2f}   {row.unsure_rate * 100:8.1f}%   "
+            f"{row.accepted_accuracy * 100:13.1f}%   {row.wrong_caught * 100:11.1f}%{mark}"
+        )
+    if not any(abs(row.value - chosen) < 1e-9 for row in rows):
+        out.append(f"  chosen cut-off {chosen:.3f} sits between two rows of this table")
+    return out
 
 
 def _scores(examples, weights, bias, table_size) -> np.ndarray:

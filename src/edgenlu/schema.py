@@ -136,6 +136,8 @@ class Spec:
     droppable: list[str] = field(default_factory=list)
     # Out-of-scope sentences for the "no command" class.
     none_examples: list[str] = field(default_factory=list)
+    # Answer-first files of extra sentences, from the file's 'extra:' key or --extra.
+    extra_files: list[str] = field(default_factory=list)
     # Where the file was read from, used for the model digest.
     source: str = ""
 

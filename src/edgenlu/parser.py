@@ -62,7 +62,28 @@ def load_spec(path) -> Spec:
         resources["none_examples"], raw.get("none_examples"), "none_examples"
     )
     spec.equivalents = _equivalents(raw.get("equivalents"))
+    spec.extra_files = _paths(raw.get("extra"), path, "extra")
     return spec
+
+
+def _paths(raw, base: Path, where: str) -> list[str]:
+    """File paths listed in a commands file, read relative to that file."""
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        raw = [raw]
+    if not isinstance(raw, list):
+        raise SpecError(f"'{where}' must be a file path or a list of file paths")
+    out: list[str] = []
+    for item in raw:
+        text = _text(item, where).strip()
+        if not text:
+            raise SpecError(f"'{where}': a path is empty")
+        found = Path(text)
+        if not found.is_absolute():
+            found = Path(base).parent / found
+        out.append(str(found))
+    return out
 
 
 def _merge_words(built_in: list[str], extra, where: str) -> list[str]:
