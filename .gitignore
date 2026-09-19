@@ -31,3 +31,12 @@ demo/esp32_round/edgenlu.c
 demo/esp32_round/edgenlu.h
 demo/esp32_round/model_data.c
 demo/esp32_round/model_data.h
+
+# Copies and build output from the FRDM-MCXN236 demo
+demo/nxp_mcxn236/edgenlu.c
+demo/nxp_mcxn236/edgenlu.h
+demo/nxp_mcxn236/model_data.c
+demo/nxp_mcxn236/model_data.h
+demo/nxp_mcxn236/build/
+demo/nxp_mcxn236/edgenlu.elf
+demo/nxp_mcxn236/edgenlu.map

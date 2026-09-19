@@ -5,6 +5,7 @@ SPEC ?= examples/smart_home.yaml
 MODEL ?= out/model
 DEVICE ?= out/device
 SKETCH ?= demo/esp32_round
+NXP_DEMO ?= demo/nxp_mcxn236
 FQBN ?= esp32:esp32:esp32
 PORT ?= /dev/cu.usbserial-0001
 
@@ -31,11 +32,19 @@ demo-build: demo-sync
 demo-flash: demo-build
 	arduino-cli upload --fqbn $(FQBN) -p $(PORT) $(SKETCH)
 
+# The FRDM-MCXN236 demo has its own makefile and copies the runtime in itself.
+nxp-build:
+	$(MAKE) -C $(NXP_DEMO)
+
+nxp-flash:
+	$(MAKE) -C $(NXP_DEMO) flash
+
 test:
 	.venv/bin/pytest -q
 
 clean:
 	$(MAKE) -C runtime clean
+	$(MAKE) -C $(NXP_DEMO) clean
 	rm -f $(SKETCH)/edgenlu.c $(SKETCH)/edgenlu.h $(SKETCH)/model_data.c $(SKETCH)/model_data.h
 
-.PHONY: cli model demo-sync demo-build demo-flash test clean
+.PHONY: cli model demo-sync demo-build demo-flash nxp-build nxp-flash test clean
