@@ -7,8 +7,10 @@ from pathlib import Path
 
 import yaml
 
+from . import lang as lang_resources
 from .numbers import parse_number
 from .schema import (
+    NONE_COMMAND,
     NUMBER,
     OUTSIDE,
     VALUES,
@@ -47,11 +49,61 @@ def load_spec(path) -> Spec:
         raise SpecError(f"{path}: the file must be a mapping with a 'commands' section")
 
     spec = Spec()
+    spec.source = str(path)
     spec.languages = _languages(raw.get("language"))
     spec.slot_types = _slot_types(raw.get("slots"))
     spec.fallback = _fallback(raw.get("fallback"))
     spec.commands = _commands(raw.get("commands"), spec)
+
+    resources = lang_resources.merged(spec.languages)
+    spec.fillers = _merge_words(resources["fillers"], raw.get("fillers"), "fillers")
+    spec.droppable = _merge_words(resources["droppable"], raw.get("droppable"), "droppable")
+    spec.none_examples = _merge_words(
+        resources["none_examples"], raw.get("none_examples"), "none_examples"
+    )
+    spec.equivalents = _equivalents(raw.get("equivalents"))
     return spec
+
+
+def _merge_words(built_in: list[str], extra, where: str) -> list[str]:
+    """The language file's list plus whatever the commands file adds, duplicates removed."""
+    if extra is None:
+        extra = []
+    if isinstance(extra, str):
+        extra = [extra]
+    if not isinstance(extra, list):
+        raise SpecError(f"'{where}' must be a list of sentences or words")
+    out: list[str] = []
+    for item in list(built_in) + list(extra):
+        text = " ".join(_text(item, where).lower().split())
+        if text and text not in out:
+            out.append(text)
+    return out
+
+
+def _equivalents(raw) -> list[list[str]]:
+    """Groups of words that mean the same thing, so the generator can swap them."""
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise SpecError("'equivalents' must be a list of word groups")
+    groups: list[list[str]] = []
+    for group in raw:
+        if isinstance(group, str):
+            group = group.split(",")
+        if not isinstance(group, list) or len(group) < 2:
+            raise SpecError("each group under 'equivalents' needs at least two words")
+        words = []
+        for word in group:
+            text = " ".join(_text(word, "equivalents").lower().split())
+            if not text:
+                raise SpecError("a word under 'equivalents' is empty")
+            if text not in words:
+                words.append(text)
+        if len(words) < 2:
+            raise SpecError("each group under 'equivalents' needs at least two different words")
+        groups.append(words)
+    return groups
 
 
 def _languages(raw) -> list[str]:
@@ -182,8 +234,10 @@ def _commands(raw, spec: Spec) -> list[Command]:
             raise SpecError(f"command '{name}': needs at least one example sentence")
         if not isinstance(examples, list):
             raise SpecError(f"command '{name}': 'examples' must be a list of sentences")
-        for text in examples:
-            command.examples.append(parse_example(_text(text, f"command '{name}'"), command, spec))
+        for index, text in enumerate(examples):
+            example = parse_example(_text(text, f"command '{name}'"), command, spec)
+            example.frame = f"{name}#{index}"
+            command.examples.append(example)
         commands.append(command)
     return commands
 
@@ -216,6 +270,13 @@ def _command_slots(raw, command: str, spec: Spec) -> list[CommandSlot]:
             )
         if any(s.name == slot.name for s in slots):
             raise SpecError(f"command '{command}': slot '{slot.name}' is listed twice")
+        clash = next((s for s in slots if s.type == slot.type), None)
+        if clash is not None:
+            raise SpecError(
+                f"command '{command}': slots '{clash.name}' and '{slot.name}' both use type "
+                f"'{slot.type}'. Tags are written from the slot type, so one command can use "
+                f"each type only once. Give one of them its own type under 'slots'."
+            )
         slots.append(slot)
     return slots
 
@@ -264,7 +325,7 @@ def parse_example(text: str, command: Command, spec: Spec) -> Example:
         start = len(tokens)
         for index, token in enumerate(slot_tokens):
             tokens.append(token)
-            tags.append(("B-" if index == 0 else "I-") + slot_name)
+            tags.append(("B-" if index == 0 else "I-") + slot.type)
         spans.append(Span(start=start, end=len(tokens), slot=slot_name, value=value))
         slots[slot_name] = value
         position = match.end()
@@ -284,10 +345,8 @@ def parse_example(text: str, command: Command, spec: Spec) -> Example:
     if not tokens:
         raise SpecError(f"command '{command.name}': an example is empty")
 
-    for slot in command.slots:
-        if slot.required and slot.name not in slots:
-            raise SpecError(f"{where}: required slot '{slot.name}' is not marked in this example")
-
+    # 'required' is a runtime rule, not a file rule. An example may leave a required slot
+    # out on purpose, and decoding that sentence then reports the slot as missing.
     return Example(
         tokens=tokens,
         tags=tags,
@@ -319,3 +378,52 @@ def _slot_value(slot_type: SlotType, surface: str, slot_name: str, where: str):
             f"Add it to the '{slot_type.name}' values."
         )
     return canonical
+
+
+def load_examples_file(path, spec: Spec) -> list[Example]:
+    """Read a hand-written test set: the same markup, checked against an existing spec.
+
+    The file lists commands and their sentences, plus an optional 'none' block for
+    sentences that are not any command. Never train on this.
+    """
+    path = Path(path)
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise SpecError(f"{path}: the file is not valid YAML: {exc}") from exc
+    if not isinstance(raw, dict) or not isinstance(raw.get("commands"), list):
+        raise SpecError(f"{path}: expected a 'commands' list")
+
+    out: list[Example] = []
+    for entry in raw["commands"]:
+        if not isinstance(entry, dict):
+            raise SpecError(f"{path}: each command must be a mapping with 'name' and 'examples'")
+        name = entry.get("name")
+        sentences = entry.get("examples")
+        if not name or not isinstance(sentences, list) or not sentences:
+            raise SpecError(f"{path}: command '{name}' needs a list of examples")
+
+        if name == NONE_COMMAND:
+            for index, text in enumerate(sentences):
+                tokens = tokenize(_text(text, f"{path}, none example"))
+                if not tokens:
+                    raise SpecError(f"{path}: a 'none' example is empty")
+                out.append(
+                    Example(
+                        tokens=tokens,
+                        tags=[OUTSIDE] * len(tokens),
+                        command=NONE_COMMAND,
+                        text=" ".join(tokens),
+                        frame=f"{NONE_COMMAND}#{index}",
+                    )
+                )
+            continue
+
+        command = spec.command(name)
+        if command is None:
+            raise SpecError(f"{path}: '{name}' is not a command in {spec.source}")
+        for index, text in enumerate(sentences):
+            example = parse_example(_text(text, f"{path}, command '{name}'"), command, spec)
+            example.frame = f"{name}#{index}"
+            out.append(example)
+    return out

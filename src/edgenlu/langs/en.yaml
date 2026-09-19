@@ -1,0 +1,122 @@
+# English language resources for the generator.
+#
+# fillers:       words people drop into a sentence without changing its meaning
+# droppable:     carrier words that can be removed without changing the meaning
+# none_examples: out-of-scope sentences, used to teach the "no command" class
+#
+# Nothing here is tied to a domain. Domain wording belongs in the commands file.
+
+fillers:
+  - please
+  - hey
+  - can you
+  - could you
+  - just
+  - now
+
+droppable:
+  - the
+  - a
+  - an
+  - please
+  - just
+
+none_examples:
+  - "what is the weather like today"
+  - "is it going to rain tomorrow"
+  - "how hot is it outside right now"
+  - "will it be cold this weekend"
+  - "tell me a joke"
+  - "say something funny"
+  - "do you know any riddles"
+  - "tell me a story"
+  - "good morning"
+  - "good evening everyone"
+  - "hello there"
+  - "hi how are you"
+  - "how are you doing today"
+  - "nice to meet you"
+  - "goodbye see you later"
+  - "thank you very much"
+  - "thanks a lot"
+  - "sorry about that"
+  - "never mind"
+  - "forget it"
+  - "what is your name"
+  - "who made you"
+  - "how old are you"
+  - "are you a real person"
+  - "can you hear me"
+  - "do you understand me"
+  - "what can you do"
+  - "help me please"
+  - "what is two plus two"
+  - "what is seven times eight"
+  - "how much is ninety divided by three"
+  - "add fifteen and twenty six"
+  - "what is the square root of sixteen"
+  - "count to twenty for me"
+  - "read me the news"
+  - "any headlines this morning"
+  - "what happened in the world today"
+  - "who won the match last night"
+  - "what is the score"
+  - "when is the next game"
+  - "play some music"
+  - "sing me a song"
+  - "play my favourite playlist"
+  - "next track please"
+  - "skip this song"
+  - "how far is the moon"
+  - "how tall is the tallest mountain"
+  - "who wrote that book"
+  - "what is the capital of japan"
+  - "spell the word banana"
+  - "translate this into french"
+  - "call my friend"
+  - "send a message to my sister"
+  - "read my messages"
+  - "what is on my calendar"
+  - "book me a table for two"
+  - "order some food"
+  - "how long is the drive"
+  - "find me a recipe"
+  - "i am going out for a walk"
+  - "i am feeling tired today"
+  - "i had a long day"
+  - "stop talking"
+  - "be quiet for a minute"
+  - "wait a second"
+  - "hold on"
+  - "listen to me"
+  - "say that again"
+  - "i did not catch that"
+  - "can you repeat"
+  - "what did you say"
+  - "nothing really"
+  - "and then"
+  - "so anyway"
+  - "i mean the"
+  - "well you know"
+  - "um let me think"
+  - "the thing is"
+  - "if you could just"
+  - "when i get"
+  - "because it was"
+  - "actually never mind that"
+  - "one more thing"
+  - "by the way"
+  - "let me see"
+  - "hang on a moment"
+  - "that is all"
+  - "nothing else"
+  - "okay fine"
+  - "sure why not"
+  - "maybe later"
+  - "not right now"
+  - "i changed my mind"
+  - "start over"
+  - "cancel that"
+  - "undo the last thing"
+  - "what time did i ask"
+  - "remind me what i said"

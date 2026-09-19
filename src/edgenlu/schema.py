@@ -65,7 +65,11 @@ class Span:
 
 @dataclass
 class Example:
-    """One tokenised sentence with BIO tags, its command and its canonical slot values."""
+    """One tokenised sentence with BIO tags, its command and its canonical slot values.
+
+    Tags carry the slot TYPE, not the slot name, so commands that use the same type share
+    evidence. The name comes back at decode time.
+    """
 
     tokens: list[str]
     tags: list[str]
@@ -73,6 +77,8 @@ class Example:
     slots: dict[str, str | int] = field(default_factory=dict)
     spans: list[Span] = field(default_factory=list)
     text: str = ""
+    # Which hand-written sentence this grew from. Splits are made by frame.
+    frame: str = ""
 
     def as_dict(self) -> dict:
         return {
@@ -97,6 +103,13 @@ class Command:
                 return s
         return None
 
+    def slot_for_type(self, type_name: str) -> CommandSlot | None:
+        """The slot that uses a type. One type is used at most once per command."""
+        for s in self.slots:
+            if s.type == type_name:
+                return s
+        return None
+
 
 @dataclass
 class Fallback:
@@ -109,15 +122,40 @@ class Fallback:
 
 @dataclass
 class Spec:
-    """A whole commands file after parsing."""
+    """A whole commands file after parsing, plus the language resources it pulled in."""
 
     languages: list[str] = field(default_factory=lambda: ["en"])
     slot_types: dict[str, SlotType] = field(default_factory=dict)
     commands: list[Command] = field(default_factory=list)
     fallback: Fallback = field(default_factory=Fallback)
+    # Groups of words that mean the same thing, from the file plus the language files.
+    equivalents: list[list[str]] = field(default_factory=list)
+    # Words that can be dropped into a sentence without changing its meaning.
+    fillers: list[str] = field(default_factory=list)
+    # Carrier words that can be removed without changing the meaning.
+    droppable: list[str] = field(default_factory=list)
+    # Out-of-scope sentences for the "no command" class.
+    none_examples: list[str] = field(default_factory=list)
+    # Where the file was read from, used for the model digest.
+    source: str = ""
 
     def command(self, name: str) -> Command | None:
         for c in self.commands:
             if c.name == name:
                 return c
         return None
+
+    def command_names(self) -> list[str]:
+        """Every command name, plus 'none' when the fallback asks for it."""
+        names = [c.name for c in self.commands]
+        if self.fallback.none_command:
+            names.append(NONE_COMMAND)
+        return names
+
+    def tag_set(self) -> list[str]:
+        """Every BIO tag the tagger can produce, in a stable order."""
+        tags = [OUTSIDE]
+        for name in sorted(self.slot_types):
+            tags.append("B-" + name)
+            tags.append("I-" + name)
+        return tags

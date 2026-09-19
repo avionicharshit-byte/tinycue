@@ -1,0 +1,105 @@
+# Hinglish language resources: Hindi typed in Latin letters, often mixed with English.
+#
+# Same three lists as en.yaml. Nothing here is tied to a domain.
+
+fillers:
+  - zara
+  - thoda
+  - please
+  - bhai
+  - jaldi
+  - abhi
+  - na
+  - yaar
+
+droppable:
+  - please
+  - zara
+  - thoda
+  - karo
+  - kardo
+  - ko
+  - hi
+
+none_examples:
+  - "aaj mausam kaisa hai"
+  - "kal barish hogi kya"
+  - "bahar kitni garmi hai"
+  - "thand pad rahi hai kya"
+  - "koi joke sunao"
+  - "kuch funny bolo"
+  - "ek kahani sunao"
+  - "paheli puchho"
+  - "namaste kaise ho"
+  - "good morning bhai"
+  - "kya haal hai"
+  - "sab theek hai na"
+  - "phir milte hain"
+  - "bahut bahut dhanyawad"
+  - "shukriya yaar"
+  - "sorry mera matlab tha"
+  - "chhodo koi baat nahi"
+  - "rehne do"
+  - "tum kaun ho"
+  - "tumhara naam kya hai"
+  - "tumhe kisne banaya"
+  - "tum sach me ho kya"
+  - "meri awaaz sunai de rahi hai"
+  - "tum samajh rahe ho"
+  - "tum kya kar sakte ho"
+  - "meri madad karo"
+  - "do aur do kitne hote hain"
+  - "paanch guna teen kitna hua"
+  - "sau me se bees ghata do"
+  - "bees tak ginti bolo"
+  - "aaj ki khabar sunao"
+  - "duniya me kya ho raha hai"
+  - "kal match kaun jeeta"
+  - "score kya hai"
+  - "agla match kab hai"
+  - "kuch gaana bajao"
+  - "mera favourite gaana lagao"
+  - "agla gaana chalao"
+  - "yeh gaana skip karo"
+  - "chand kitni door hai"
+  - "sabse uncha pahad kaun sa hai"
+  - "woh kitab kisne likhi"
+  - "japan ki rajdhani kya hai"
+  - "is shabd ki spelling batao"
+  - "ise english me batao"
+  - "mere dost ko call karo"
+  - "behen ko message bhejo"
+  - "mere message padho"
+  - "aaj ka calendar dikhao"
+  - "khana order kar do"
+  - "koi recipe batao"
+  - "mujhe bhookh lagi hai"
+  - "main bahar ja raha hoon"
+  - "aaj bahut thak gaya"
+  - "din lamba tha"
+  - "kal chhutti hai kya"
+  - "thoda ruko"
+  - "ek minute rukiye"
+  - "chup ho jao"
+  - "meri baat suno"
+  - "phir se bolo"
+  - "samajh nahi aaya"
+  - "tumne kya kaha"
+  - "kya kar rahe ho"
+  - "aur phir"
+  - "matlab woh"
+  - "dekho aisa hai"
+  - "agar tum bas"
+  - "kyunki woh tha"
+  - "achha theek hai"
+  - "haan bilkul"
+  - "abhi nahi baad me"
+  - "mera irada badal gaya"
+  - "phir se shuru karo"
+  - "usse cancel kar do"
+  - "maine kya kaha tha"
+  - "bahar kaafi shor hai"
+  - "chalo baat karte hain"
+  - "kal milte hain"
+  - "bas itna hi"
+  - "aur kuch nahi"

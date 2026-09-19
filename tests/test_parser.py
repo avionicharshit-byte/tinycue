@@ -74,7 +74,9 @@ def test_command_slot_can_rename_a_slot_type(example_spec):
     speed = fan.slot("speed")
     assert speed.type == "direction"
     assert fan.slot("room").required is False
-    assert fan.examples[0].tags[-1] == "B-speed"
+    # Tags carry the slot TYPE, not the slot name, so set_fan shares evidence
+    # with anything else that uses "direction".
+    assert fan.examples[0].tags[-1] == "B-direction"
 
 
 def test_example_file_loads(example_spec):
@@ -178,11 +180,31 @@ def test_unknown_slot_type_on_a_command(write_spec):
     )
 
 
-def test_required_slot_missing_from_an_example(write_spec):
+def test_a_required_slot_may_be_left_out_of_an_example(write_spec):
+    """'required' is a runtime rule. An example may leave the slot out on purpose."""
+    spec = load_spec(
+        write_spec(
+            SMALL_SPEC.replace(
+                '- "[rasoi](room) mein light [jala do](state)"',
+                '- "light [band](state) karo"',
+            )
+        )
+    )
+    example = spec.command("set_light").examples[1]
+    assert example.slots == {"state": "off"}
+    assert "room" not in example.slots
+    assert spec.command("set_light").slot("room").required is True
+
+
+def test_two_slots_of_the_same_type_are_rejected(write_spec):
     _expect_error(
         write_spec,
-        SMALL_SPEC.replace('- "[rasoi](room) mein light [jala do](state)"', '- "light [band](state) karo"'),
-        "required slot 'room' is not marked",
+        SMALL_SPEC.replace(
+            "    slots: [room, state]",
+            "    slots:\n      - name: room\n      - name: other_room\n        type: room\n"
+            "      - name: state",
+        ),
+        "both use type 'room'",
     )
 
 
