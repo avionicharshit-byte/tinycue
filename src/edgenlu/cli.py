@@ -279,9 +279,16 @@ def _train(args) -> int:
     )
 
     splits = Path(args.splits) if args.splits else out_dir.parent / "splits"
-    write_jsonl(result.split.dev, splits / "dev.jsonl")
-    write_jsonl(result.split.test, splits / "test.jsonl")
-    print(f"splits written to {splits}")
+    if dev is not None:
+        write_jsonl(dev, splits / "dev.jsonl")
+        print(
+            f"dev split written to {splits}. Every generated sentence was trained on: "
+            f"{args.dev} is the holdout."
+        )
+    else:
+        write_jsonl(result.split.dev, splits / "dev.jsonl")
+        write_jsonl(result.split.test, splits / "test.jsonl")
+        print(f"splits written to {splits}")
 
     total = 0
     print("bundle:")

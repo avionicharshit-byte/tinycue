@@ -188,11 +188,14 @@ def train(
     hand_written = list(dev_examples or [])
 
     if hand_written:
-        training = split.train + split.dev
+        # A hand-written dev set is a better holdout than any slice of generated data, so
+        # nothing generated is held back: every sentence goes into training.
+        split = Split(train=list(examples))
+        training = split.train
         calibration = hand_written
         log(
-            f"generated {len(examples)} examples: {len(training)} train, "
-            f"{len(split.test)} test, calibrating on {len(calibration)} hand-written sentences"
+            f"generated {len(examples)} training examples, calibrating on "
+            f"{len(calibration)} hand-written sentences"
         )
     else:
         training = split.train
