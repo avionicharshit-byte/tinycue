@@ -25,3 +25,9 @@ out/
 # C build output
 runtime/*.o
 runtime/enlu_cli
+
+# Copies made by make demo-sync
+demo/esp32_round/edgenlu.c
+demo/esp32_round/edgenlu.h
+demo/esp32_round/model_data.c
+demo/esp32_round/model_data.h
