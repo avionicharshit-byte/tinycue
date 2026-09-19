@@ -1,0 +1,702 @@
+# Extra training sentences for examples/smart_home.yaml, written answer first.
+#
+# The answer is written first and the sentences are written for it, so every line is
+# labelled by construction. Markup, [the words](slot_name), teaches a new way of saying
+# a value: it goes into the gazetteer, into decoding and into the exported blob, so the
+# generator can then use it in every other sentence.
+#
+#   edgenlu train examples/smart_home.yaml --extra examples/smart_home.extra.yaml \
+#       --dev examples/smart_home.dev.yaml -o out/model
+#
+# Nothing here was copied from a test set. The point is variety: different verbs, word
+# orders, polite and blunt, short and long, typos, run-ons from speech to text, English
+# and Hinglish, and plenty of near misses that use these words and mean nothing.
+
+# ---------------------------------------------------------------------------
+# set_light: new ways of saying the state
+# ---------------------------------------------------------------------------
+
+- answer: set_light(room=bedroom, state=on)
+  say:
+    - "[illuminate](state) the bedroom"
+    - "[light up](state) the bedroom"
+    - "power on the bedroom light"
+    - "[fire up](state) the bedroom lamp"
+    - "[enable](state) the bedroom light"
+    - "[activate](state) the light in the bedroom"
+    - "[turnon](state) the bedroom light"
+    - "switch on the bedroom light for me"
+
+- answer: set_light(room=kitchen, state=on)
+  say:
+    - "kitchen ki light [jala](state)"
+    - "rasoi ki batti [chala do](state)"
+    - "kitchen light [khol do](state)"
+    - "[jalado](state) kitchen ki light"
+    - "kitchen ki light [onn](state) kar"
+    - "rasoi me light [chalu kar do](state)"
+    - "kitchen ki batti [roshan karo](state)"
+    - "[jalaiye](state) rasoi ki light"
+
+- answer: set_light(room=living_room, state=off)
+  say:
+    - "[kill](state) the hall light"
+    - "[cut](state) the living room light"
+    - "[shut](state) the drawing room light"
+    - "[douse](state) the hall lights"
+    - "[disable](state) the living room light"
+    - "[offf](state) the hall light"
+    - "switch off the living room lights now"
+    - "power off the hall lamp"
+
+- answer: set_light(room=bathroom, state=off)
+  say:
+    - "washroom ki light [bujhao](state)"
+    - "bathroom ki batti [band karo](state)"
+    - "gusalkhana ki light [gul kar do](state)"
+    - "washroom light [bandh karo](state)"
+    - "bathroom ki light [bujha](state) do na"
+    - "washroom ki batti [off karo](state)"
+    - "[bandkaro](state) bathroom ki light"
+    - "gusalkhane ki light [bhuja do](state)"
+
+# ---------------------------------------------------------------------------
+# set_light: new ways of naming a room
+# ---------------------------------------------------------------------------
+
+- answer: set_light(room=bedroom, state=on)
+  say:
+    - "turn on the [bedrom](room) light"
+    - "switch on the [sleeping room](room) light"
+    - "[mere kamre](room) ki light on kar do"
+    - "on kar do [sone ke kamre](room) ki batti"
+    - "light on in the [bedrooom](room)"
+    - "[bed rm](room) light on"
+
+- answer: set_light(room=kitchen, state=off)
+  say:
+    - "turn off the [kitchn](room) light"
+    - "switch off the [kichen](room) light"
+    - "[rasoi me](room) light band kar do"
+    - "[cooking area](room) light off"
+    - "[kitchen me](room) batti bujha do"
+    - "[rasoi ke](room) andar light off karo"
+
+- answer: set_light(room=living_room, state=on)
+  say:
+    - "turn on the [lounge](room) light"
+    - "put the [sitting room](room) lights on"
+    - "switch on the [front room](room) light"
+    - "[tv room](room) light on karo"
+    - "on the [family room](room) lights"
+    - "[livingroom](room) light chalu karo"
+    - "[hall me](room) light jala do"
+
+- answer: set_light(room=bathroom, state=on)
+  say:
+    - "turn on the [toilet](room) light"
+    - "the [loo](room) light on please"
+    - "switch on the [bath room](room) light"
+    - "[shower room](room) light on kar do"
+    - "[bathrom](room) light jalao"
+    - "[gusalkhane](room) ki light jala do"
+    - "[washroom ke](room) andar light on"
+
+# ---------------------------------------------------------------------------
+# set_light: ordinary sentences, every word order I could think of
+# ---------------------------------------------------------------------------
+
+- answer: set_light(room=bedroom, state=on)
+  say:
+    - "bedroom light on"
+    - "can you put the bedroom light on"
+    - "i need the bedroom light on please"
+    - "would you mind turning the bedroom light on"
+    - "hey turn the light on in the bedroom"
+    - "bedroom me light jalao na"
+    - "please please turn on the bedroom light"
+    - "umm turn on the bedroom light"
+    - "it is dark in here on the bedroom light"
+    - "on the bedroom light i cannot see anything"
+    - "bedroom ki light on karo abhi"
+    - "sone ka kamra light chalu"
+
+- answer: set_light(room=kitchen, state=on)
+  say:
+    - "kitchen light on"
+    - "put on the kitchen light"
+    - "get the kitchen light on"
+    - "flip the kitchen light on"
+    - "i want the kitchen light on"
+    - "kitchen ki light on kar do bhai"
+    - "rasoi ki light chalu karo please"
+    - "can we have the kitchen light on"
+    - "on the light in the kitchen thanks"
+    - "kitchen light on kar de"
+
+- answer: set_light(room=living_room, state=on)
+  say:
+    - "hall light on"
+    - "get the living room lights on"
+    - "flick the hall light on"
+    - "put the drawing room light on for me"
+    - "could you switch the hall lights on"
+    - "baithak ki light jala do jaldi"
+    - "hall ki light on karo guests aa rahe hain"
+    - "living room me light chalu karo"
+    - "on karo hall ki batti"
+
+- answer: set_light(room=bathroom, state=on)
+  say:
+    - "bathroom light on"
+    - "put the washroom light on"
+    - "switch the bathroom light on quickly"
+    - "i need the washroom light on"
+    - "washroom ki light jala do"
+    - "gusalkhana light chalu karo"
+    - "bathroom ki batti on kar do"
+
+- answer: set_light(room=bedroom, state=off)
+  say:
+    - "bedroom light off"
+    - "put the bedroom light off"
+    - "please switch the bedroom light off i am sleeping"
+    - "kill the lights in the bedroom"
+    - "turn the bedroom light off and close the door"
+    - "bedroom ki light band kar do"
+    - "sone ka kamra ki batti bujha do"
+    - "kamre ki light off karo please"
+    - "no more light in the bedroom off it"
+
+- answer: set_light(room=kitchen, state=off)
+  say:
+    - "kitchen light off"
+    - "shut the kitchen light"
+    - "cut the kitchen light nobody is cooking"
+    - "please turn the kitchen light off"
+    - "rasoi ki light band karo"
+    - "kitchen ki batti bujha do ab"
+    - "kitchen light off kar do khana ho gaya"
+
+- answer: set_light(room=living_room, state=off)
+  say:
+    - "hall light off"
+    - "living room lights off please"
+    - "put the drawing room light off"
+    - "switch off the hall lights we are leaving"
+    - "hall ki light band kar do"
+    - "baithak ki batti off karo"
+    - "drawing room light bujha do"
+
+- answer: set_light(room=bathroom, state=off)
+  say:
+    - "bathroom light off"
+    - "washroom light off kar do"
+    - "shut the bathroom light you left it on"
+    - "turn off the light in the washroom"
+    - "gusalkhana ki light band karo"
+    - "bathroom ki batti bujha do"
+
+# A room nobody said. The answer leaves the slot out, and the device asks which room.
+- answer: set_light(state=on)
+  say:
+    - "lights on"
+    - "turn the lights on"
+    - "switch on the light"
+    - "light jala do"
+    - "batti chalu karo"
+    - "can you put the lights on"
+
+- answer: set_light(state=off)
+  say:
+    - "lights off"
+    - "turn the lights off"
+    - "switch off the light"
+    - "light band kar do"
+    - "batti bujha do"
+    - "kill the lights"
+
+# ---------------------------------------------------------------------------
+# set_fan: new ways of saying the speed
+# ---------------------------------------------------------------------------
+
+- answer: set_fan(room=bedroom, speed=up)
+  say:
+    - "bedroom fan [a notch higher](speed)"
+    - "make the bedroom fan [higher](speed)"
+    - "put the bedroom fan on [full](speed)"
+    - "bedroom fan on [max](speed) please"
+    - "set the bedroom fan to [maximum](speed)"
+    - "bedroom fan [high](speed) kar do"
+    - "[crank up](speed) the bedroom fan"
+    - "bedroom ka fan [aur tez](speed) karo"
+    - "kamre ka pankha [tezi se](speed) chalao"
+    - "bedroom fan [turbo](speed)"
+
+- answer: set_fan(room=kitchen, speed=down)
+  say:
+    - "make the kitchen fan [lower](speed)"
+    - "kitchen fan on [low](speed)"
+    - "[reduce](speed) the kitchen fan"
+    - "kitchen fan to [minimum](speed)"
+    - "put the kitchen fan on [min](speed)"
+    - "kitchen fan a bit [gentle](speed)"
+    - "rasoi ka pankha [halka](speed) karo"
+    - "kitchen ka fan [dheema](speed) kar do"
+    - "rasoi me fan [kam](speed) karo"
+    - "kitchen fan [slow](speed) kar do"
+
+# ---------------------------------------------------------------------------
+# set_fan: ordinary sentences, with and without a room
+# ---------------------------------------------------------------------------
+
+- answer: set_fan(room=bedroom, speed=up)
+  say:
+    - "bedroom fan faster"
+    - "speed the bedroom fan up"
+    - "i am hot make the bedroom fan faster"
+    - "bedroom fan up please"
+    - "can you increase the bedroom fan"
+    - "bedroom ka fan tez karo"
+    - "kamre ka pankha badha do"
+    - "bedroom fan tez kar do bahut garmi hai"
+
+- answer: set_fan(room=kitchen, speed=up)
+  say:
+    - "kitchen fan faster"
+    - "turn the kitchen fan up"
+    - "increase the kitchen fan speed"
+    - "rasoi ka pankha tez karo"
+    - "kitchen fan ki speed badha do"
+    - "make the fan in the kitchen faster"
+
+- answer: set_fan(room=living_room, speed=down)
+  say:
+    - "hall fan slower"
+    - "slow the living room fan down"
+    - "turn the hall fan down a bit"
+    - "decrease the drawing room fan"
+    - "baithak ka pankha dheere karo"
+    - "hall ka fan kam kar do"
+    - "living room fan ki speed kam karo"
+
+- answer: set_fan(room=bathroom, speed=up)
+  say:
+    - "bathroom fan faster"
+    - "speed up the washroom fan"
+    - "washroom ka pankha tez kar do"
+    - "increase the bathroom exhaust fan"
+
+- answer: set_fan(speed=up)
+  say:
+    - "fan faster"
+    - "fan up"
+    - "speed up the fan"
+    - "make the fan faster please"
+    - "turn the fan up it is boiling"
+    - "pankha tez karo"
+    - "fan badha do thoda"
+    - "fan ki speed increase karo"
+    - "fan tez"
+    - "faster fan please"
+    - "can you speed the fan up a little"
+    - "fan thoda tez kar do na"
+
+- answer: set_fan(speed=down)
+  say:
+    - "fan slower"
+    - "fan down"
+    - "slow the fan down"
+    - "make the fan slower please"
+    - "turn the fan down i am cold"
+    - "pankha dheere karo"
+    - "fan kam kar do"
+    - "fan ki speed kam karo"
+    - "fan dheere"
+    - "slower fan please"
+    - "could you slow the fan down a bit"
+    - "fan thoda kam karo na"
+    - "fan speed decrease karo"
+
+# ---------------------------------------------------------------------------
+# set_timer
+# ---------------------------------------------------------------------------
+
+- answer: set_timer(minutes=10)
+  say:
+    - "ten minute timer"
+    - "set a ten minute timer"
+    - "start a timer for ten minutes"
+    - "give me ten minutes on the clock"
+    - "countdown ten minutes"
+    - "10 minute ka timer laga do"
+    - "das minute ka timer"
+    - "das minute baad bata dena"
+    - "timer 10 minutes chalu karo"
+    - "put a ten minute countdown on"
+
+- answer: set_timer(minutes=5)
+  say:
+    - "five minute timer"
+    - "timer for five minutes please"
+    - "buzz me in five minutes"
+    - "wake me up in 5 minutes"
+    - "paanch minute ka timer laga"
+    - "5 minute baad yaad dilana"
+    - "set timer 5 min"
+    - "five mins timer"
+
+- answer: set_timer(minutes=20)
+  say:
+    - "twenty minute timer"
+    - "set the timer to twenty minutes"
+    - "ring in twenty minutes"
+    - "20 minute ka alarm laga do"
+    - "bees minute ka timer set karo"
+    - "twenty minutes se alarm"
+    - "alarm after 20 minutes"
+
+- answer: set_timer(minutes=45)
+  say:
+    - "forty five minute timer"
+    - "set a 45 minute timer for the rice"
+    - "remind me in forty five minutes"
+    - "paintalis minute ka timer"
+    - "45 min timer laga do"
+    - "timer set karo 45 minute ka"
+
+- answer: set_timer(minutes=90)
+  say:
+    - "ninety minute timer"
+    - "put a 90 minute timer on"
+    - "wake me in ninety minutes"
+    - "nabbe minute ka timer laga do"
+    - "alarm 90 minute baad"
+
+- answer: set_timer(minutes=120)
+  say:
+    - "two hour timer that is one hundred twenty minutes"
+    - "timer for 120 minutes"
+    - "ek sau bees minute ka alarm laga do"
+    - "one hundred and twenty minute countdown"
+    - "120 minute baad uthana"
+
+- answer: set_timer(minutes=1)
+  say:
+    - "one minute timer"
+    - "just one minute timer please"
+    - "ek minute ka timer"
+    - "1 minute countdown chalu"
+
+- answer: set_timer(minutes=15)
+  say:
+    - "fifteen minute timer"
+    - "set an alarm for fifteen minutes"
+    - "pandrah minute ka timer laga do"
+    - "15 minute me yaad dilana"
+    - "quarter of an hour that is 15 minutes timer"
+    - "timer fifteen"
+
+- answer: set_timer(minutes=30)
+  say:
+    - "thirty minute timer"
+    - "half hour timer set to 30 minutes"
+    - "tees minute ka timer"
+    - "30 minute baad alarm bajana"
+    - "start a 30 min countdown"
+    - "timer thirty minutes"
+
+- answer: set_timer(minutes=3)
+  say:
+    - "three minute timer for the eggs"
+    - "teen minute ka timer laga do"
+    - "3 minute countdown"
+    - "buzz me after three minutes"
+
+# ---------------------------------------------------------------------------
+# show: new ways of asking, then ordinary ones
+# ---------------------------------------------------------------------------
+
+- answer: show(what=temperature)
+  say:
+    - "[how hot](what) is it in here"
+    - "what is the [heat](what) right now"
+    - "read the [thermometer](what)"
+    - "[temprature](what) kya hai"
+    - "[tapman](what) batao"
+    - "[kitni garmi](what) hai andar"
+    - "how [garam](what) is it"
+
+- answer: show(what=time)
+  say:
+    - "[what time](what) is it"
+    - "look at the [clock](what) for me"
+    - "[ghadi](what) me kya hua hai"
+    - "[waqt](what) kya hua"
+    - "[tym](what) batao"
+    - "[samay kya](what) hai abhi"
+
+- answer: show(what=humidity)
+  say:
+    - "how much [moisture](what) is in the air"
+    - "[how humid](what) is it"
+    - "is it [humid](what) today"
+    - "[namee](what) kitni hai"
+    - "[nami level](what) batao"
+    - "[humidity kitni](what) hai"
+
+- answer: show(what=temperature)
+  say:
+    - "temperature"
+    - "what is the temperature"
+    - "tell me the temperature please"
+    - "can you read out the temperature"
+    - "show the temperature on the screen"
+    - "temp kya hai"
+    - "garmi kitni hai"
+    - "andar ka temperature batao"
+    - "whats the temp in here"
+    - "give me the temperature now"
+
+- answer: show(what=time)
+  say:
+    - "time"
+    - "what is the time"
+    - "tell me the time"
+    - "show me the time on the screen"
+    - "time batao jaldi"
+    - "kya baja hai abhi"
+    - "samay kya hai"
+    - "can you tell me the time please"
+    - "screen par time dikhao"
+
+- answer: show(what=humidity)
+  say:
+    - "humidity"
+    - "what is the humidity"
+    - "tell me the humidity"
+    - "read out the humidity for me"
+    - "show humidity on the display"
+    - "nami kitni hai ghar me"
+    - "humidity level kya hai"
+    - "check the humidity please"
+
+# ---------------------------------------------------------------------------
+# none: near misses that use these words and ask for nothing
+# ---------------------------------------------------------------------------
+
+- answer: none
+  say:
+    - "i am a big fan of cricket"
+    - "he is a huge fan of that singer"
+    - "the fan club meets on sunday"
+    - "my fan is making a strange noise"
+    - "the ceiling fan needs cleaning"
+    - "how does a ceiling fan work anyway"
+    - "pankha kitne watt ka hai"
+    - "fan ki awaaz bahut aa rahi hai"
+    - "pankhe ki speed kaise badhti hai"
+    - "who invented the electric fan"
+
+- answer: none
+  say:
+    - "the light in this photo is lovely"
+    - "light travels faster than sound"
+    - "who invented the light bulb"
+    - "this bag is very light"
+    - "the traffic light was red"
+    - "i need a lighter not a light"
+    - "batti kis company ki hai"
+    - "light bill kitna aaya"
+    - "kal raat light chali gayi thi"
+    - "light se meri aankhen dukh rahi hain"
+
+- answer: none
+  say:
+    - "my bedroom is very messy today"
+    - "the kitchen smells wonderful"
+    - "we painted the living room blue"
+    - "the bathroom tap is dripping"
+    - "how big is your bedroom"
+    - "rasoi me kya bana hai aaj"
+    - "bathroom me pani nahi aa raha"
+    - "hall me kitne log baithe hain"
+    - "bedroom ka darwaza band kar do"
+    - "kitchen ka naksha dikhao"
+
+- answer: none
+  say:
+    - "what is the temperature of the sun"
+    - "the temperature outside is lovely today"
+    - "what does humidity even mean"
+    - "time flies when you are busy"
+    - "i do not have time for this"
+    - "what is the time difference with london"
+    - "timer ka matlab kya hota hai"
+    - "mujhe bahut garmi lag rahi hai"
+    - "aaj mausam kaisa hai"
+    - "kitna time lagega khana banane me"
+
+- answer: none
+  say:
+    - "set a reminder to call my mother"
+    - "play some music in the background"
+    - "how many minutes in a day"
+    - "count down from ten for fun"
+    - "what did i ask you a minute ago"
+    - "never mind cancel that"
+    - "ok forget what i said"
+    - "are you even listening to me"
+    - "thoda ruko main sochta hoon"
+    - "kuch nahi bas aise hi"
+
+# ---------------------------------------------------------------------------
+# Round two: words the dev set used that no training sentence had, plus more
+# breadth where doctor said a command was thin
+# ---------------------------------------------------------------------------
+
+- answer: set_light(room=kitchen, state=on)
+  say:
+    - "[brighten](state) the kitchen please"
+    - "[brighten up](state) the kitchen"
+    - "[light it up](state) in the kitchen"
+    - "[glow](state) the kitchen light"
+
+- answer: set_light(room=living_room, state=off)
+  say:
+    - "[put out](state) the hall light"
+    - "[put out](state) the drawing room lights now"
+    - "[extinguish](state) the living room light"
+    - "[snuff out](state) the hall light"
+
+- answer: set_fan(room=kitchen, speed=up)
+  say:
+    - "[ramp up](speed) the kitchen fan"
+    - "[ramp up](speed) the kitchen fan a little"
+    - "[wind up](speed) the kitchen fan"
+    - "[step up](speed) the kitchen fan"
+
+- answer: set_fan(room=bedroom, speed=down)
+  say:
+    - "[wind down](speed) the bedroom fan"
+    - "[ease off](speed) the bedroom fan"
+    - "[dial down](speed) the fan in the bedroom"
+    - "[step down](speed) the bedroom fan"
+
+- answer: show(what=temperature)
+  say:
+    - "how [warm](what) is it outside"
+    - "[how warm](what) is the house"
+    - "is it too [hot](what) right now"
+    - "[how cold](what) is it in here"
+    - "[kitna thanda](what) hai andar"
+    - "[garmee](what) kitni hai"
+
+- answer: show(what=time)
+  say:
+    - "[kitna baja](what) hai zara batao"
+    - "[kitne baje](what) hain abhi"
+    - "[time kya](what) hua hai"
+    - "[ghadi me](what) kya hua"
+
+- answer: show(what=humidity)
+  say:
+    - "[how damp](what) is the air"
+    - "[nami ka level](what) kya hai"
+    - "[moisture level](what) batao"
+    - "[humidity ka level](what) dikhao"
+
+- answer: show(what=temperature)
+  say:
+    - "give me a temperature reading"
+    - "how much is the temp inside"
+    - "temperature check please"
+    - "what temperature is it in the house"
+    - "andar temperature kitna hai"
+    - "temp dikhao screen par"
+    - "current temperature batao"
+
+- answer: show(what=time)
+  say:
+    - "the time please"
+    - "just the time"
+    - "tell me what the time is"
+    - "time bata do zara"
+    - "abhi ka samay batao"
+    - "clock pe kya time hai"
+    - "current time dikhao"
+
+- answer: show(what=humidity)
+  say:
+    - "humidity reading please"
+    - "how much humidity right now"
+    - "give me the humidity number"
+    - "humidity check karo"
+    - "nami ka hisab batao"
+    - "current humidity dikhao"
+
+- answer: none
+  say:
+    - "the car needs a service next week"
+    - "my belt snapped this morning"
+    - "the amazon rainforest is very wet"
+    - "this suitcase weight is too much"
+    - "saman andar rakh do"
+    - "ye kya cheez hai bhai"
+    - "how far is the airport from here"
+    - "my train leaves at six"
+    - "the school holidays start on monday"
+    - "i have a meeting in the office"
+
+- answer: none
+  say:
+    - "what is for dinner tonight"
+    - "the neighbours are very loud again"
+    - "bacchon ko school bhejna hai"
+    - "paani ka bill jama karna hai"
+    - "kal chhutti hai kya"
+    - "mera phone charge nahi ho raha"
+    - "did you water the plants"
+    - "the dog needs a walk"
+    - "gaadi me petrol khatam hai"
+    - "mausam badal raha hai lagta hai"
+
+# ---------------------------------------------------------------------------
+# Round three: the word "lamp", and near misses shaped like a real question
+# ---------------------------------------------------------------------------
+
+- answer: set_light(room=bedroom, state=on)
+  say:
+    - "put the bedside lamp on in the bedroom"
+    - "bedroom lamp on karo"
+    - "switch the bedroom lamp on"
+
+- answer: set_light(room=living_room, state=off)
+  say:
+    - "the hall lamp off please"
+    - "turn the lounge lamp off"
+    - "living room lamp band kar do"
+
+- answer: none
+  say:
+    - "what is the temperature on mars"
+    - "what is the time in london right now"
+    - "what is the humidity in a desert"
+    - "what is the temperature of boiling water"
+    - "what time does the sun rise in june"
+    - "how humid does it get in the monsoon"
+    - "tell me about the weather in shimla"
+    - "why does humidity make it feel hotter"
+    - "samay kaise nikal jata hai pata hi nahi chalta"
+    - "garmi ke din kab shuru hote hain"
+
+- answer: none
+  say:
+    - "the exhaust fan in the car is noisy"
+    - "he is a fan of that film club"
+    - "the lamp shade needs dusting"
+    - "light rain is expected tonight"
+    - "she is a light sleeper"
+    - "pankha chhat se latka hua hai"
+    - "batti wala aaya tha bill lene"
+    - "kamre me dhoop aa rahi hai"

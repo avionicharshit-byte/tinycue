@@ -1,0 +1,205 @@
+# Hand-written dev set for examples/smart_home.yaml, written answer first.
+#
+# This is what the temperature, the tagger power and the "unsure" cut-off are fitted on.
+# It is never trained on, and the markup in it teaches the model nothing: a dev sentence
+# with a word the model has never seen is meant to fail, so that `edgenlu doctor` can
+# name the word.
+#
+# Nothing here shares a sentence with examples/smart_home.extra.yaml. Same device, other
+# words.
+#
+#   edgenlu doctor examples/smart_home.yaml --extra examples/smart_home.extra.yaml \
+#       --dev examples/smart_home.dev.yaml
+
+- answer: set_light(room=bedroom, state=on)
+  say:
+    - "could you turn on the light in the bedroom for me"
+    - "put the bedroom lights on now"
+    - "bedroom ki batti jala do zara"
+    - "sone ke kamre ki light on kar do"
+
+- answer: set_light(room=kitchen, state=on)
+  say:
+    - "switch the kitchen lamp on"
+    - "rasoi ki light on kar do na"
+    - "kitchen light chalu kardo"
+
+- answer: set_light(room=living_room, state=on)
+  say:
+    - "turn the living room lamp on"
+    - "hall ki batti jalao"
+    - "[brighten](state) the living room"
+
+- answer: set_light(room=bathroom, state=on)
+  say:
+    - "washroom light on karo jaldi"
+    - "bathroom ki light jala dena"
+
+- answer: set_light(room=bedroom, state=off)
+  say:
+    - "off the bedroom light please i am going to sleep"
+    - "bedroom ki batti band kar do"
+    - "[put out](state) the bedroom light"
+
+- answer: set_light(room=kitchen, state=off)
+  say:
+    - "shut off the kitchen light"
+    - "kitchen light off kardo"
+    - "please could someone turn the kitchen light off"
+
+- answer: set_light(room=living_room, state=off)
+  say:
+    - "hall ki light band karo please"
+    - "living room lights off now"
+
+- answer: set_light(room=bathroom, state=off)
+  say:
+    - "bathroom ki batti off kar do"
+    - "turn off the washroom light"
+
+- answer: set_fan(room=bedroom, speed=up)
+  say:
+    - "make the bedroom fan go faster"
+    - "bedroom ka pankha tez kar do please"
+
+- answer: set_fan(room=living_room, speed=up)
+  say:
+    - "increase fan speed in the hall"
+    - "drawing room fan faster karo"
+
+- answer: set_fan(room=kitchen, speed=up)
+  say:
+    - "kitchen fan ko tez karo"
+
+- answer: set_fan(room=bathroom, speed=up)
+  say:
+    - "washroom ka pankha tez chalao"
+
+- answer: set_fan(speed=up)
+  say:
+    - "fan ki speed thoda badha do"
+    - "put the fan up a bit"
+    - "the fan is too slow speed it up"
+    - "[ramp up](speed) the fan"
+
+- answer: set_fan(room=living_room, speed=down)
+  say:
+    - "make the hall fan slower please"
+
+- answer: set_fan(room=bedroom, speed=down)
+  say:
+    - "turn down the bedroom fan"
+
+- answer: set_fan(room=bathroom, speed=down)
+  say:
+    - "bathroom fan ki speed kam kar do"
+
+- answer: set_fan(speed=down)
+  say:
+    - "fan slow kar do"
+    - "bring the fan speed down"
+    - "pankha thoda dheere kar do"
+    - "fan kam karo thoda"
+    - "[wind down](speed) the fan"
+
+- answer: set_timer(minutes=7)
+  say:
+    - "set a timer for seven minutes"
+    - "saat minute ka timer laga do"
+
+- answer: set_timer(minutes=12)
+  say:
+    - "timer 12 minutes"
+
+- answer: set_timer(minutes=15)
+  say:
+    - "remind me in a quarter hour that is fifteen minutes"
+
+- answer: set_timer(minutes=60)
+  say:
+    - "60 minute ka alarm"
+    - "timer for one hour which is sixty minutes"
+
+- answer: set_timer(minutes=8)
+  say:
+    - "eight minute timer chahiye"
+    - "aath minute baad batana"
+
+- answer: set_timer(minutes=25)
+  say:
+    - "25 minute ka timer set kar do"
+
+- answer: set_timer(minutes=35)
+  say:
+    - "start a countdown of thirty five minutes"
+
+- answer: set_timer(minutes=2)
+  say:
+    - "two minute timer please"
+    - "do minute ka timer"
+
+- answer: set_timer(minutes=18)
+  say:
+    - "alarm lagao 18 minute ka"
+    - "atharah minute baad yaad dilana"
+
+- answer: set_timer(minutes=100)
+  say:
+    - "put a timer of 100 minutes"
+    - "sau minute ka timer"
+
+- answer: set_timer(minutes=9)
+  say:
+    - "nine minutes timer start karo"
+
+- answer: set_timer(minutes=11)
+  say:
+    - "timer chalu karo 11 minute ka"
+
+- answer: show(what=temperature)
+  say:
+    - "what is the temperature inside"
+    - "temp batao na"
+    - "kamre ka temperature kya hai"
+    - "display the temperature please"
+    - "kitna garam hai andar"
+    - "screen par temperature dikhao"
+    - "[how warm](what) is it in here"
+    - "is it [hot](what) in here"
+
+- answer: show(what=humidity)
+  say:
+    - "tell me how much humidity there is"
+    - "humidity kitni hai abhi"
+    - "nami ka level batao"
+    - "read the humidity out loud"
+    - "what is the humidity level right now"
+
+- answer: show(what=time)
+  say:
+    - "what does the clock say"
+    - "time kya ho raha hai"
+    - "show me the current time"
+    - "ghadi dekh kar batao"
+    - "abhi [kitna baja](what) hai"
+
+- answer: none
+  say:
+    - "the bedroom window is open"
+    - "i left my keys in the kitchen"
+    - "how long does a light bulb last"
+    - "the fan belt in the car snapped"
+    - "what is the humidity in the amazon rainforest"
+    - "my phone timer is not working"
+    - "how many hours are in a day"
+    - "tell me a joke about the weather"
+    - "good night see you tomorrow"
+    - "kitchen me kaun hai abhi"
+    - "light weight saman hai ye"
+    - "pankhe ki taar toot gayi"
+    - "bedroom kitne ka mila tha"
+    - "garmi bahut ho rahi hai bahar"
+    - "timer ki awaaz nahi aa rahi"
+    - "hall me sofa kahan rakhein"
+    - "bathroom kab banwaya tha"
+    - "what colour should we paint the hall"

@@ -1,0 +1,756 @@
+# Extra training sentences for examples/robot.yaml, written answer first.
+#
+# The answer comes first and the sentences are written for it, so every line is labelled
+# by construction. Markup, [the words](slot_name), teaches a new way of saying a value:
+# it reaches the gazetteer, decoding and the exported blob, and the generator then uses
+# it everywhere.
+#
+#   edgenlu train examples/robot.yaml --extra examples/robot.extra.yaml \
+#       --dev examples/robot.dev.yaml -o out/model
+#
+# stop, grab and release carry no slots at all, so the only thing that can help them is
+# more ways of saying the same thing. That is most of this file.
+
+# ---------------------------------------------------------------------------
+# move: new ways of naming a heading
+# ---------------------------------------------------------------------------
+
+- answer: move(heading=forward, steps=10)
+  say:
+    - "go [front](heading) ten steps"
+    - "move [onward](heading) ten steps"
+    - "head [onwards](heading) for ten steps"
+    - "travel [fwd](heading) 10 steps"
+    - "[frwrd](heading) 10 steps"
+    - "[aagey](heading) das kadam chalo"
+    - "[seedhe](heading) das kadam badho"
+    - "[aage ki taraf](heading) 10 kadam"
+
+- answer: move(heading=back, steps=5)
+  say:
+    - "go [rear](heading) five steps"
+    - "move [behind](heading) by five steps"
+    - "[bakwards](heading) 5 steps"
+    - "[piche](heading) paanch kadam jao"
+    - "[peechhe](heading) 5 kadam chalo"
+    - "[ulta](heading) paanch kadam"
+    - "[back wards](heading) five steps please"
+
+- answer: move(heading=left, steps=3)
+  say:
+    - "go [lft](heading) three steps"
+    - "move [left side](heading) 3 steps"
+    - "step [leftwards](heading) three times"
+    - "[bayen](heading) teen kadam chalo"
+    - "[baaye taraf](heading) 3 kadam badho"
+
+- answer: move(heading=right, steps=4)
+  say:
+    - "go [rght](heading) four steps"
+    - "move [right side](heading) 4 steps"
+    - "step [rightwards](heading) four times"
+    - "[dayen](heading) char kadam chalo"
+    - "[daahine](heading) 4 kadam badho"
+
+# ---------------------------------------------------------------------------
+# move: ordinary sentences
+# ---------------------------------------------------------------------------
+
+- answer: move(heading=forward, steps=10)
+  say:
+    - "forward ten"
+    - "[advance](heading) ten steps"
+    - "roll forward ten steps"
+    - "creep forward by ten steps"
+    - "scoot ahead ten steps"
+    - "inch forward ten steps"
+    - "please walk straight for ten steps"
+    - "can you move forward ten steps for me"
+    - "aage das kadam chalo"
+    - "seedha 10 kadam jao"
+    - "das kadam aage badho"
+    - "10 step aage"
+
+- answer: move(heading=back, steps=5)
+  say:
+    - "back five"
+    - "reverse five steps"
+    - "back up five steps"
+    - "[retreat](heading) five steps"
+    - "pull back by five steps"
+    - "go backwards 5 steps now"
+    - "peeche paanch kadam"
+    - "5 kadam peeche jao"
+    - "peeche hato paanch kadam"
+
+- answer: move(heading=left, steps=3)
+  say:
+    - "left three"
+    - "sidestep left three steps"
+    - "shuffle left by three steps"
+    - "shift left 3 steps"
+    - "take three steps to the left"
+    - "baayen teen kadam chalo"
+    - "3 kadam baaye jao"
+
+- answer: move(heading=right, steps=4)
+  say:
+    - "right four"
+    - "sidestep right four steps"
+    - "shift right 4 steps"
+    - "take four steps to the right"
+    - "daayen char kadam badho"
+    - "4 kadam daaye chalo"
+
+- answer: move(heading=forward, steps=25)
+  say:
+    - "go forward twenty five steps"
+    - "move ahead 25 steps"
+    - "straight for twenty five steps"
+    - "pachees kadam aage chalo"
+    - "aage 25 kadam jao"
+
+- answer: move(heading=back, steps=50)
+  say:
+    - "back fifty steps"
+    - "reverse for 50 steps"
+    - "go backwards fifty steps"
+    - "pachaas kadam peeche jao"
+    - "50 kadam ulta chalo"
+
+# No step count at all. The device should say the count is missing, not invent one.
+- answer: move(heading=forward)
+  say:
+    - "move forward"
+    - "go ahead"
+    - "go straight"
+    - "keep going forward"
+    - "aage chalo"
+    - "seedha chalo"
+
+- answer: move(heading=left)
+  say:
+    - "move left"
+    - "go left"
+    - "shift left"
+    - "baayen jao"
+
+- answer: move(heading=right)
+  say:
+    - "move right"
+    - "go right"
+    - "shift right"
+    - "daayen jao"
+
+- answer: move(heading=back)
+  say:
+    - "move back"
+    - "go backwards"
+    - "reverse"
+    - "peeche chalo"
+
+# ---------------------------------------------------------------------------
+# turn
+# ---------------------------------------------------------------------------
+
+- answer: turn(heading=left, degrees=90)
+  say:
+    - "turn left ninety"
+    - "swing left ninety degrees"
+    - "pivot left by 90 degrees"
+    - "yaw left ninety degrees"
+    - "face left 90 degrees"
+    - "quarter turn to the left that is 90 degrees"
+    - "baayen nabbe degree ghoomo"
+    - "90 degree baaye mudo"
+    - "left 90 degree ghumao"
+
+- answer: turn(heading=right, degrees=45)
+  say:
+    - "turn right forty five"
+    - "swing right 45 degrees"
+    - "pivot right by forty five degrees"
+    - "rotate right forty five"
+    - "daayen paintalis degree mudo"
+    - "45 degree daaye ghoomo"
+
+- answer: turn(heading=back, degrees=180)
+  say:
+    - "turn [around](heading) one hundred eighty degrees"
+    - "about turn back 180 degrees"
+    - "spin back one hundred and eighty degrees"
+    - "flip back 180 degrees"
+    - "peeche ek sau assi degree ghoomo"
+    - "180 degree ulta mudo back"
+
+- answer: turn(heading=left, degrees=30)
+  say:
+    - "turn left thirty degrees"
+    - "nudge left by 30 degrees"
+    - "rotate left tees degree"
+    - "30 degree baayen ghoomo"
+
+- answer: turn(heading=right, degrees=120)
+  say:
+    - "turn right one hundred twenty degrees"
+    - "rotate right 120 degrees"
+    - "daayen ek sau bees degree ghoomo"
+
+- answer: turn(heading=left)
+  say:
+    - "turn left"
+    - "spin left"
+    - "rotate left"
+    - "pivot left"
+    - "swing to the left"
+    - "turn left a little"
+    - "baayen mudo"
+    - "left ghoomo"
+    - "thoda baaye mudo"
+
+- answer: turn(heading=right)
+  say:
+    - "turn right"
+    - "spin right"
+    - "rotate right"
+    - "pivot right"
+    - "swing to the right"
+    - "turn right slightly"
+    - "daayen mudo"
+    - "right ghoomo"
+    - "thoda daaye mud jao"
+
+- answer: turn(heading=back)
+  say:
+    - "turn [around](heading)"
+    - "spin around to the back"
+    - "face back"
+    - "about turn to the back"
+    - "peeche ghoomo"
+    - "ulta mudo peeche"
+
+# ---------------------------------------------------------------------------
+# stop: no slots, so every word for stopping has to be written out
+# ---------------------------------------------------------------------------
+
+- answer: stop
+  say:
+    - "stop"
+    - "stop it"
+    - "stop now"
+    - "stop please"
+    - "just stop"
+    - "stop the robot"
+    - "stop everything"
+    - "stop right there"
+    - "please stop moving"
+    - "stop stop stop"
+
+- answer: stop
+  say:
+    - "halt"
+    - "halt now"
+    - "halt right there"
+    - "freeze"
+    - "freeze right now"
+    - "brake"
+    - "hit the brakes"
+    - "brakes on"
+    - "cease movement"
+    - "abort"
+
+- answer: stop
+  say:
+    - "hold it"
+    - "hold up"
+    - "hold everything"
+    - "stand still"
+    - "stay where you are"
+    - "do not move"
+    - "dont move"
+    - "no more movement"
+    - "that is enough"
+    - "enough"
+
+- answer: stop
+  say:
+    - "kill the motors"
+    - "cut power to the wheels"
+    - "shut it down"
+    - "all stop"
+    - "emergency stop now"
+    - "full stop right now"
+    - "pause"
+    - "pause everything"
+    - "wheels off"
+    - "quit moving"
+
+- answer: stop
+  say:
+    - "ruk"
+    - "ruko"
+    - "ruk jao"
+    - "ruk ja"
+    - "rukiye"
+    - "abhi ruko"
+    - "ruk jao abhi"
+    - "thehro"
+    - "theher jao"
+    - "rok do"
+
+- answer: stop
+  say:
+    - "roko ise"
+    - "bas"
+    - "bas karo"
+    - "bas ab ruk jao"
+    - "aage mat badho"
+    - "mat chalo"
+    - "khade raho"
+    - "hilna mat"
+    - "chalna band karo"
+    - "movement band kar do"
+
+# ---------------------------------------------------------------------------
+# grab: no slots either
+# ---------------------------------------------------------------------------
+
+- answer: grab
+  say:
+    - "grab"
+    - "grab it"
+    - "grab that"
+    - "grab hold of it"
+    - "grab the box"
+    - "grab it now"
+    - "go on grab it"
+    - "grab that thing"
+    - "grab this one"
+    - "please grab it"
+
+- answer: grab
+  say:
+    - "pick it up"
+    - "pick that up"
+    - "pick up the block"
+    - "pick it up please"
+    - "lift it"
+    - "lift it up"
+    - "lift that up"
+    - "lift the object"
+    - "take it"
+    - "take that"
+
+- answer: grab
+  say:
+    - "seize it"
+    - "seize that object"
+    - "hold it tight"
+    - "hold on to that"
+    - "clamp it"
+    - "clamp down on it"
+    - "clasp it"
+    - "grip it"
+    - "grip that hard"
+    - "clutch it"
+
+- answer: grab
+  say:
+    - "close the gripper"
+    - "close your claw"
+    - "close the hand"
+    - "shut the claw"
+    - "squeeze the gripper shut"
+    - "catch it"
+    - "snatch it up"
+    - "scoop it up"
+    - "get a hold of it"
+    - "collect that"
+
+- answer: grab
+  say:
+    - "pakdo"
+    - "pakdo ise"
+    - "pakad lo"
+    - "ise pakad lo"
+    - "haath se pakdo"
+    - "jakad lo"
+    - "utha lo"
+    - "uthao"
+    - "uthao ise"
+    - "ise utha lo"
+
+- answer: grab
+  say:
+    - "gripper band karo"
+    - "claw band kar do"
+    - "haath band karo"
+    - "pakad ke rakho"
+    - "kas ke pakdo"
+    - "utha lo ise jaldi"
+
+# ---------------------------------------------------------------------------
+# release: no slots either
+# ---------------------------------------------------------------------------
+
+- answer: release
+  say:
+    - "release"
+    - "release it"
+    - "release that"
+    - "release the object"
+    - "release it now"
+    - "please release it"
+    - "release your grip"
+    - "release the block"
+    - "go on release it"
+    - "release this"
+
+- answer: release
+  say:
+    - "let go"
+    - "let it go"
+    - "let that go"
+    - "let go of it now"
+    - "drop it"
+    - "drop that"
+    - "drop the block"
+    - "just drop it"
+    - "drop it right here"
+    - "drop everything"
+
+- answer: release
+  say:
+    - "put it down"
+    - "put that down"
+    - "set it down"
+    - "set it down gently"
+    - "place it down"
+    - "lower it down and let go"
+    - "unclamp it"
+    - "loosen your grip"
+    - "let loose"
+    - "leave it"
+
+- answer: release
+  say:
+    - "open the gripper"
+    - "open your claw"
+    - "open the hand"
+    - "open up the claw"
+    - "gripper open karo"
+    - "ungrip it"
+    - "free the object"
+    - "hand it over and let go"
+    - "give it up"
+    - "release grip now"
+
+- answer: release
+  say:
+    - "chhodo"
+    - "chhod do"
+    - "chhod de"
+    - "chod do ise"
+    - "ise chhod do"
+    - "chhod dena ab"
+    - "neeche rakh do"
+    - "rakh do neeche"
+    - "gira do"
+    - "haath kholo"
+
+- answer: release
+  say:
+    - "gripper khol do"
+    - "claw khol do"
+    - "haath khol do"
+    - "pakad chhod do"
+    - "dheela chhod do"
+    - "neeche rakho ise"
+
+# ---------------------------------------------------------------------------
+# set_speed: new ways of saying the rate, then ordinary sentences
+# ---------------------------------------------------------------------------
+
+- answer: set_speed(rate=fast)
+  say:
+    - "go [speedy](rate)"
+    - "drive [rapid](rate)"
+    - "run [swift](rate)"
+    - "[hurry](rate) up"
+    - "[zoom](rate) along"
+    - "[fatafat](rate) chalo"
+    - "[jaldi se](rate) chalo"
+    - "[turant](rate) chalo"
+    - "[tezi se](rate) chalna shuru karo"
+
+- answer: set_speed(rate=slow)
+  say:
+    - "go [gently](rate)"
+    - "drive [gentle](rate)"
+    - "[crawl](rate) along"
+    - "[creep](rate) forward slowly"
+    - "take it [easy](rate)"
+    - "[dheere dheere](rate) chalo"
+    - "[araam se](rate) chalo"
+    - "[halke](rate) chalo"
+    - "[sust](rate) chalo"
+
+- answer: set_speed(rate=normal)
+  say:
+    - "go at [regular](rate) speed"
+    - "back to [usual](rate) speed"
+    - "run at [standard](rate) speed"
+    - "set speed to [mid](rate)"
+    - "[average](rate) speed please"
+    - "[aam](rate) speed par chalo"
+    - "[samanya](rate) speed rakho"
+    - "speed [normal hi](rate) rakho"
+
+- answer: set_speed(rate=fast)
+  say:
+    - "go fast"
+    - "go faster"
+    - "speed up and go fast"
+    - "faster please"
+    - "pick up the pace and go quick"
+    - "set speed to fast"
+    - "drive quickly"
+    - "run at a quick pace"
+    - "make it faster"
+    - "tez chalo"
+    - "jaldi chalo"
+    - "speed tez kar do"
+    - "thoda tez chalo"
+
+- answer: set_speed(rate=slow)
+  say:
+    - "go slow"
+    - "go slower"
+    - "slow down"
+    - "slower please"
+    - "ease off the speed and go slow"
+    - "set speed to slow"
+    - "drive slowly"
+    - "run at a slow pace"
+    - "make it slower"
+    - "dheere chalo"
+    - "aaram se chalo"
+    - "speed slow kar do"
+    - "thoda dheere chalo"
+
+- answer: set_speed(rate=normal)
+  say:
+    - "normal speed"
+    - "go at normal speed"
+    - "set speed to medium"
+    - "medium speed please"
+    - "back to normal"
+    - "run at normal pace"
+    - "theek speed par chalo"
+    - "sadharan speed rakho"
+    - "normal kar do speed"
+
+# ---------------------------------------------------------------------------
+# none: near misses that use these words and ask for nothing
+# ---------------------------------------------------------------------------
+
+- answer: none
+  say:
+    - "how many steps did i walk today"
+    - "this staircase has twenty steps"
+    - "what are the steps to make tea"
+    - "the next step is the hard one"
+    - "kitne kadam chale aaj"
+    - "do kadam door hai bazaar"
+    - "kadam kadam badhaye ja gaana hai"
+    - "my step counter is broken"
+
+- answer: none
+  say:
+    - "my left arm hurts a lot"
+    - "i write with my left hand"
+    - "he is always right about these things"
+    - "ninety degrees is a right angle"
+    - "the right answer is forty two"
+    - "mera haath dukh raha hai"
+    - "left hand se likhta hoon"
+    - "daayen taraf wala ghar mera hai"
+    - "turn of events was surprising"
+    - "it was a right mess"
+
+- answer: none
+  say:
+    - "stop signs are red everywhere"
+    - "the bus stop is two roads away"
+    - "he never stops talking"
+    - "a full stop goes at the end"
+    - "the brake pads need replacing"
+    - "brake fail ho gaya tha"
+    - "freezing point of water is zero"
+    - "the film was a real drag"
+
+- answer: none
+  say:
+    - "i grabbed a coffee earlier"
+    - "grab a bite before we go"
+    - "pick your favourite colour"
+    - "she dropped out of college"
+    - "drop me a message later"
+    - "the release date is next month"
+    - "a new album release this friday"
+    - "let it go is a song"
+
+- answer: none
+  say:
+    - "speed of light is constant"
+    - "the speed limit here is forty"
+    - "who built the first robot"
+    - "robot ka matlab kya hota hai"
+    - "the robot vacuum is stuck again"
+    - "tez dhoop hai bahar aaj"
+    - "gaadi dheere chalao kaha tha maine"
+    - "aage kya hone wala hai"
+    - "peeche wali gali me mat jana"
+    - "normal si baat hai"
+
+# ---------------------------------------------------------------------------
+# Round two: words the dev set used that no training sentence had, and pairs
+# that hold stop, grab and release apart
+# ---------------------------------------------------------------------------
+
+- answer: set_speed(rate=fast)
+  say:
+    - "go [quicker](rate) please"
+    - "[quicker](rate) chalo"
+    - "move [brisk](rate)"
+    - "[speedily](rate) chalo"
+
+- answer: set_speed(rate=normal)
+  say:
+    - "keep a [steady](rate) pace"
+    - "[steady](rate) speed rakho"
+    - "[ordinary](rate) speed par chalo"
+    - "[thik thak](rate) speed rakho"
+
+- answer: turn(heading=left, degrees=90)
+  say:
+    - "veer left ninety degrees"
+    - "bank left 90 degrees"
+    - "angle left ninety degrees"
+
+- answer: turn(heading=right)
+  say:
+    - "veer right"
+    - "bear right"
+    - "bank right"
+    - "right ki taraf mudo"
+    - "daayen ki taraf ghoom jao"
+
+- answer: turn(heading=left)
+  say:
+    - "bear left"
+    - "left ki taraf mud jao"
+    - "thoda left ghoomo"
+
+- answer: release
+  say:
+    - "unhand that object"
+    - "unhand it right now"
+    - "ungrasp the block"
+    - "quit holding it"
+    - "stop holding that and let go"
+    - "haath se chhod do"
+    - "pakad dheeli karo"
+
+- answer: grab
+  say:
+    - "stop and grab it"
+    - "hold it do not let go"
+    - "grab and hold tight"
+    - "pakad ke rakhna chhodna mat"
+    - "ruko aur pakad lo"
+
+- answer: stop
+  say:
+    - "stop do not release it"
+    - "halt and hold position"
+    - "stop the wheels but keep holding"
+    - "ruko chhodna mat"
+    - "ruk jao par pakde rehna"
+
+- answer: none
+  say:
+    - "change the subject please"
+    - "the subject of that email was odd"
+    - "they marched down the street"
+    - "the band will march at noon"
+    - "waqt ke saath sab ho jayega"
+    - "sab kuch theek ho jayega dheere"
+    - "he dropped a hint about it"
+    - "drop by my place later"
+    - "a drop of water fell on me"
+    - "the release notes are online"
+
+- answer: none
+  say:
+    - "on hold for twenty minutes"
+    - "i turned twenty last month"
+    - "it is my turn now"
+    - "the left overs are in the fridge"
+    - "degrees are awarded in june"
+    - "mud lagi hai jooton par"
+    - "haath dho lo khana se pehle"
+    - "kadam se kadam milakar chalo gaana hai"
+
+# ---------------------------------------------------------------------------
+# Round three: "drop the ..." as an idiom, speed said with up and down, and a
+# wider none class
+# ---------------------------------------------------------------------------
+
+- answer: none
+  say:
+    - "drop the idea it will not work"
+    - "lets drop the topic now"
+    - "they dropped the case last year"
+    - "drop the act i know the truth"
+    - "he dropped the ball on that one"
+    - "the temperature dropped overnight"
+    - "prices have dropped a lot this year"
+    - "a stitch in time saves nine"
+
+- answer: set_speed(rate=slow)
+  say:
+    - "slow it down"
+    - "bring the speed down to slow"
+    - "take the speed down slowly"
+    - "raftaar dheere karo"
+    - "speed ko dheere karo"
+
+- answer: set_speed(rate=fast)
+  say:
+    - "take the speed up to fast"
+    - "raftaar tez kar do"
+    - "crank the speed up quick"
+    - "speed ko tez karo"
+
+- answer: stop
+  say:
+    - "stop and stay put"
+    - "stop it there do not move"
+    - "no movement please stop"
+    - "sab kuch rok do abhi"
+    - "movement rok do"
+    - "chalna ruk jao"
+
+- answer: none
+  say:
+    - "what time is the game tonight"
+    - "i am learning to play the guitar"
+    - "the batteries need charging again"
+    - "how do servo motors work"
+    - "send me the photos later"
+    - "mujhe bhookh lag rahi hai"
+    - "kal ka mausam kaisa rahega"
+    - "school ka homework baaki hai"
+    - "car ki service karwani hai"
+    - "chai bana do garam si"

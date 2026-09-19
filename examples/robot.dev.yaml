@@ -1,0 +1,211 @@
+# Hand-written dev set for examples/robot.yaml, written answer first.
+#
+# The temperature, the tagger power and the "unsure" cut-off are fitted on this file.
+# It is never trained on, and its markup teaches the model nothing, so a sentence with a
+# word the model has never seen fails on purpose and `edgenlu doctor` can name the word.
+#
+# Nothing here shares a sentence with examples/robot.extra.yaml.
+#
+#   edgenlu doctor examples/robot.yaml --extra examples/robot.extra.yaml \
+#       --dev examples/robot.dev.yaml
+
+- answer: move(heading=forward, steps=12)
+  say:
+    - "go forward twelve steps"
+
+- answer: move(heading=forward, steps=8)
+  say:
+    - "walk ahead 8 steps"
+
+- answer: move(heading=forward, steps=6)
+  say:
+    - "move forward by six steps"
+
+- answer: move(heading=forward, steps=7)
+  say:
+    - "aage saat kadam chalo"
+
+- answer: move(heading=forward, steps=15)
+  say:
+    - "seedha 15 kadam badho"
+
+- answer: move(heading=forward, steps=9)
+  say:
+    - "take nine steps forward"
+
+- answer: move(heading=back, steps=7)
+  say:
+    - "go back seven steps"
+
+- answer: move(heading=back, steps=2)
+  say:
+    - "peeche do kadam hato"
+
+- answer: move(heading=back, steps=11)
+  say:
+    - "reverse by eleven steps"
+
+- answer: move(heading=left, steps=5)
+  say:
+    - "move left five steps"
+
+- answer: move(heading=left, steps=4)
+  say:
+    - "baaye char kadam jao"
+
+- answer: move(heading=right, steps=2)
+  say:
+    - "go right two steps"
+
+- answer: move(heading=right, steps=3)
+  say:
+    - "daaye teen kadam chalo"
+
+- answer: move(heading=forward)
+  say:
+    - "step forward"
+
+- answer: move(heading=back)
+  say:
+    - "walk backwards"
+
+- answer: move(heading=left)
+  say:
+    - "head left"
+
+- answer: turn(heading=left, degrees=60)
+  say:
+    - "turn left sixty degrees"
+
+- answer: turn(heading=right, degrees=90)
+  say:
+    - "rotate right ninety degrees"
+    - "swivel right ninety degrees"
+
+- answer: turn(heading=left, degrees=45)
+  say:
+    - "baayen 45 degree mudo"
+
+- answer: turn(heading=right, degrees=30)
+  say:
+    - "spin right 30 degrees"
+
+- answer: turn(heading=back, degrees=180)
+  say:
+    - "turn back 180"
+
+- answer: turn(heading=right, degrees=90)
+  say:
+    - "daayen nabbe degree ghoomo"
+
+- answer: turn(heading=right, degrees=70)
+  say:
+    - "turn right by seventy degrees"
+
+- answer: turn(heading=right, degrees=20)
+  say:
+    - "twist right 20 degrees"
+
+- answer: turn(heading=left)
+  say:
+    - "turn a bit to the left"
+    - "left ki taraf ghoomo"
+    - "veer left"
+
+- answer: turn(heading=right)
+  say:
+    - "rotate to the right"
+
+- answer: turn(heading=back)
+  say:
+    - "peeche mud jao"
+
+- answer: stop
+  say:
+    - "stop moving right now"
+    - "please halt"
+    - "come to a stop"
+    - "stop the wheels"
+    - "hold still"
+    - "wait stop"
+    - "cut the power"
+    - "put on the brakes"
+    - "stand down"
+    - "ruk jao bhai"
+    - "abhi rok do"
+    - "band karo sab"
+    - "bas ab bas"
+    - "chalna bandh karo"
+
+- answer: grab
+  say:
+    - "grab that block"
+    - "pick the thing up"
+    - "close the gripper now"
+    - "take hold of it"
+    - "get that object"
+    - "hold that please"
+    - "lift the cube"
+    - "squeeze it"
+    - "clench the claw"
+    - "grab on"
+    - "pakad lo ise jaldi"
+    - "utha lena ise"
+    - "gripper ko band karo"
+    - "haath se uthao"
+
+- answer: release
+  say:
+    - "let it drop"
+    - "release the block now"
+    - "open the claw please"
+    - "put that down gently"
+    - "let go of that"
+    - "drop it here"
+    - "unhand it"
+    - "set the object down"
+    - "let it fall"
+    - "chhod do ab"
+    - "neeche rakh do ise"
+    - "haath khol do"
+    - "gripper ko kholo"
+
+- answer: set_speed(rate=fast)
+  say:
+    - "go really fast"
+    - "speed ko fast karo"
+    - "tez chalna shuru karo"
+    - "jaldi chalna shuru karo"
+    - "make it go [quicker](rate)"
+
+- answer: set_speed(rate=slow)
+  say:
+    - "run slowly please"
+    - "thoda dheere chalo please"
+    - "drive at a slow pace"
+    - "aaram se chalna"
+    - "slow it right down"
+
+- answer: set_speed(rate=normal)
+  say:
+    - "set the speed to normal"
+    - "medium speed rakho"
+    - "normal par chalo"
+    - "go at a [steady](rate) pace"
+
+- answer: none
+  say:
+    - "how many degrees is a circle"
+    - "my right shoe is torn"
+    - "he turned up late again"
+    - "the robot arm in the factory broke"
+    - "what are the steps to solve this puzzle"
+    - "there is no stopping him"
+    - "i picked up a cold last week"
+    - "drop the subject please"
+    - "release me from this meeting"
+    - "aage badho zindagi me"
+    - "peeche mud ke mat dekho"
+    - "dheere dheere sab theek ho jayega"
+    - "left right left march"
+    - "my degree is in engineering"
