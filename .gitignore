@@ -19,6 +19,9 @@ env/
 # Build and run outputs
 out/
 
+# Downloaded models and other caches. The Vosk model is 54 MB, never commit it.
+.cache/
+
 # macOS
 .DS_Store
 
@@ -40,3 +43,12 @@ demo/nxp_mcxn236/model_data.h
 demo/nxp_mcxn236/build/
 demo/nxp_mcxn236/edgenlu.elf
 demo/nxp_mcxn236/edgenlu.map
+
+# Copies and build output from the voice demo firmware
+demo/voice/nxp_mic_stream/edgenlu.c
+demo/voice/nxp_mic_stream/edgenlu.h
+demo/voice/nxp_mic_stream/model_data.c
+demo/voice/nxp_mic_stream/model_data.h
+demo/voice/nxp_mic_stream/build/
+demo/voice/nxp_mic_stream/voice.elf
+demo/voice/nxp_mic_stream/voice.map

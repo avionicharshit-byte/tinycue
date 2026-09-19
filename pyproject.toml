@@ -20,6 +20,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
 demo = ["pyserial>=3.5"]
+voice = ["pyserial>=3.5", "vosk>=0.3.44", "sounddevice>=0.4"]
 
 [project.scripts]
 edgenlu = "edgenlu.cli:main"

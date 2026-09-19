@@ -6,6 +6,7 @@ MODEL ?= out/model
 DEVICE ?= out/device
 SKETCH ?= demo/esp32_round
 NXP_DEMO ?= demo/nxp_mcxn236
+VOICE_FW ?= demo/voice/nxp_mic_stream
 FQBN ?= esp32:esp32:esp32
 PORT ?= /dev/cu.usbserial-0001
 
@@ -39,12 +40,33 @@ nxp-build:
 nxp-flash:
 	$(MAKE) -C $(NXP_DEMO) flash
 
+# The voice demo: microphone firmware for the NXP board, and the Vosk model the
+# Mac side needs. The model is 54 MB of download, so it is cached, not committed.
+VOSK_MODEL ?= vosk-model-small-en-in-0.4
+VOSK_DIR ?= .cache/vosk
+
+voice-model:
+	@test -d $(VOSK_DIR)/$(VOSK_MODEL) && echo "$(VOSK_DIR)/$(VOSK_MODEL) is already here" || ( \
+	  mkdir -p $(VOSK_DIR) && \
+	  curl -fL -o $(VOSK_DIR)/$(VOSK_MODEL).zip \
+	    https://alphacephei.com/vosk/models/$(VOSK_MODEL).zip && \
+	  cd $(VOSK_DIR) && unzip -q -o $(VOSK_MODEL).zip && rm -f $(VOSK_MODEL).zip && \
+	  echo "unpacked $(VOSK_DIR)/$(VOSK_MODEL)" )
+
+voice-build:
+	$(MAKE) -C $(VOICE_FW)
+
+voice-flash:
+	$(MAKE) -C $(VOICE_FW) flash
+
 test:
 	.venv/bin/pytest -q
 
 clean:
 	$(MAKE) -C runtime clean
 	$(MAKE) -C $(NXP_DEMO) clean
+	$(MAKE) -C $(VOICE_FW) clean
 	rm -f $(SKETCH)/edgenlu.c $(SKETCH)/edgenlu.h $(SKETCH)/model_data.c $(SKETCH)/model_data.h
 
-.PHONY: cli model demo-sync demo-build demo-flash nxp-build nxp-flash test clean
+.PHONY: cli model demo-sync demo-build demo-flash nxp-build nxp-flash \
+        voice-model voice-build voice-flash test clean

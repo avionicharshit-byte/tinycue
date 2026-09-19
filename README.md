@@ -7,10 +7,11 @@ a model file under 1 MB, small enough for an ESP32 or a Raspberry Pi, with Engli
 support.
 
 Status: milestone M3. The commands file parser, the example generator, training, calibration, the
-command line, the C99 device runtime and two board demos all work. The C runtime is proved against
-Python on 842 sentences, and it runs offline on a classic ESP32 and on an Arm Cortex-M33, in under
-5 milliseconds a sentence on both, with the same source file and no chip specific code. See
-[PLAN.md](PLAN.md) for what is left.
+command line, the C99 device runtime and three board demos all work. The C runtime is proved
+against Python on 842 sentences, and it runs offline on a classic ESP32 and on an Arm Cortex-M33,
+in under 5 milliseconds a sentence on both, with the same source file and no chip specific code.
+There is also a [voice demo](demo/voice) where you speak to the boards, with the speech to text
+running on the laptop. See [PLAN.md](PLAN.md) for what is left.
 
 ![How edge-nlu works](diagrams/edge-nlu-flow.png)
 
@@ -165,6 +166,31 @@ Full numbers in [demo/nxp_mcxn236/board-results.md](demo/nxp_mcxn236/board-resul
 has a single precision FPU only, so `-DENLU_FAST_EXP`, which does the two exponentials in the CRF
 forward pass in single precision, is worth 2.7 times there: 4,805 microseconds a sentence with it
 and 12,943 without, for the same answers to six decimals.
+
+### Saying it out loud
+
+[demo/voice](demo/voice) puts the two boards together. The FRDM-MCXN236 streams its on-board
+microphone to the Mac at 16 kHz over its debug serial port, the Mac turns the speech into text with
+[Vosk](https://alphacephei.com/vosk/) offline, and the sentence goes back to both boards, which
+parse it and show the answer on the round display and the red LED.
+
+```sh
+make voice-model                          # fetch the Vosk model, 54 MB, once
+make voice-flash                          # build and flash the microphone firmware
+.venv/bin/python demo/voice/listen.py     # then speak
+```
+
+**The speech to text runs on the Mac, not on a chip.** edge-nlu turns text into a command; it is
+not a speech recogniser. What the chips do here is what they do everywhere else in this repository.
+
+Five commands played out loud into the room were all understood correctly, in 795 to 1,099
+milliseconds from the last sound of the sentence to the answer, of which 44 milliseconds was the
+two boards and the rest was Vosk deciding the sentence had ended. The audio link runs at 1 Mbaud
+and lost no packets in 30 seconds of testing. The Vosk word list is built from the commands file,
+so it follows `--spec` and knows no domain of its own. The honest limit is that Vosk's English
+models have no entry for 152 of the 481 words in the smart home file, so every Hinglish word is
+inaudible through this path. Numbers and the full list are in
+[demo/voice/README.md](demo/voice/README.md).
 
 ## What it does today
 

@@ -77,6 +77,12 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   The same 31 sentences, all 31 matching the desktop C tool with the confidence identical to six
   decimals. Nothing in `runtime/` had to change and the build is warning free. Numbers in
   `demo/nxp_mcxn236/board-results.md`.
+- [x] **M3c**: a voice demo across both boards at once. The FRDM-MCXN236 streams its microphone
+  at 16 kHz over the MCU-Link serial port at 1 Mbaud, framed, with 0 lost packets in a 30 second
+  counter test and 3 times the headroom the audio needs; the Mac runs Vosk against a word list
+  built from the commands file; both boards parse the sentence. Five commands played out loud were
+  all right, 795 to 1,099 ms from the end of speech to the answer, of which 44 ms was the boards.
+  Speech to text runs on the Mac, not on a chip. Numbers in `demo/voice/README.md`.
 - [ ] **M4**: README, a Hinglish example pack, and the first release.
 
 ## Numbers to aim for
@@ -94,6 +100,11 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
 
 ## Open questions
 
+- **Hinglish cannot be spoken to this demo.** Vosk's English models do not carry the Hinglish
+  words, and a word outside a grammar-constrained recogniser's word list can never be produced,
+  however clearly it is said. So the tool's best feature is invisible through a microphone today.
+  It needs a recogniser with a Hindi or code-mixed lexicon, or proxy spellings that an English
+  lexicon can reach. Typed Hinglish still works.
 - What to call the project. `edge-nlu` is a working name only.
 - Licence. Apache-2.0 or MIT; Apache-2.0 is the safer default because of the patent grant.
 - ~~How to handle numbers.~~ Settled in M0 and widened in M1: a table of English and Hindi number
