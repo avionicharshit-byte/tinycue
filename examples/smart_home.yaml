@@ -3,10 +3,13 @@
 # This one file is the whole input. You write it by hand, run the trainer, and get back
 # C code plus a model file under 1 MB.
 #
-# Three parts:
-#   slots:    the kinds of value a command can carry, and the words people use for them
-#   commands: what the device can do, with example sentences
-#   fallback: what happens when the model is not sure
+# The parts:
+#   slots:         the kinds of value a command can carry, and the words people use
+#   commands:      what the device can do, with example sentences
+#   equivalents:   words that mean the same thing, for the generator to swap around
+#   fillers:       extra filler words on top of the ones the language files hold
+#   none_examples: extra out-of-scope sentences, including near misses
+#   fallback:      what happens when the model is not sure
 #
 # Markup in examples: [spoken words](slot_name)
 #   "turn [on](state) the [bedroom](room) light"  ->  state=on, room=bedroom
@@ -67,6 +70,14 @@ commands:
       - "[rasoi](room) mein light [jala do](state)"
       - "please put the [living room](room) lights [on](state)"
       - "[hall](room) ki light [chalu](state) kar do please"
+      - "[on](state) the light in the [bathroom](room)"
+      - "[washroom](room) light [off](state) kar do"
+      - "[bujha do](state) the [hall](room) light"
+      - "light [on](state) in the [kitchen](room)"
+      - "[gusalkhana](room) ki batti [jalao](state)"
+      - "[baithak](room) ki light [off kar do](state)"
+      - "[sone ka kamra](room) ki light [on kar do](state)"
+      - "[drawing room](room) light [band kar do](state)"
 
   # Fan control. The room is optional: with no room, the device uses the one it is in.
   - name: set_fan
@@ -82,6 +93,14 @@ commands:
       - "[dheere](speed) karo fan"
       - "turn the [hall](room) fan speed [up](speed)"
       - "fan ko thoda [kam karo](speed)"
+      - "[bathroom](room) fan [slower](speed)"
+      - "speed [up](speed) the fan in the [kitchen](room)"
+      - "[washroom](room) ka pankha [dheere karo](speed)"
+      - "fan [increase](speed) karo"
+      - "[baithak](room) ka fan [badha do](speed)"
+      - "[decrease](speed) the [bed room](room) fan speed"
+      - "pankha [tez karo](speed) [rasoi](room) mein"
+      - "please make the fan [slower](speed)"
 
   # Set a countdown timer.
   - name: set_timer
@@ -93,6 +112,14 @@ commands:
       - "[das](minutes) minute baad alarm"
       - "timer [45](minutes) minutes"
       - "[bees](minutes) minute ka timer set karo"
+      - "[thirty](minutes) minute ka timer"
+      - "alarm in [90](minutes) minutes"
+      - "[pandrah](minutes) minute baad yaad dilana"
+      - "wake me in [one hundred twenty](minutes) minutes"
+      - "timer set karo [chalis](minutes) minute ka"
+      - "[2](minutes) minutes ka timer laga"
+      - "put a [ninety](minutes) minute timer on"
+      - "[ek sau bees](minutes) minute ka alarm"
 
   # Read something out or show it on the screen.
   - name: show
@@ -104,6 +131,53 @@ commands:
       - "abhi [kya baja](what) hai"
       - "tell me the [humidity](what) in here"
       - "[garmi](what) kitni hai bahar"
+      - "how much is the [temperature](what)"
+      - "[time](what) batao"
+      - "check the [humidity](what) for me"
+      - "[temp](what) kya hai abhi"
+      - "screen par [samay](what) dikhao"
+      - "read out the [humidity level](what)"
+      - "[kitna garam](what) hai yahan"
+      - "give me the [time](what) right now"
+
+# Words that mean the same thing in this domain. The generator swaps them around when it
+# builds training sentences, so the model sees wording you did not type out by hand.
+# These never touch a slot span. Nothing here is built in: every domain writes its own.
+equivalents:
+  - [turn, switch]
+  - [karo, kar do, kardo]
+  - [light, lights, batti]
+  - [fan, pankha]
+  - [kitni, kitna]
+
+# Extra filler words for this domain, added to the ones the language files already have.
+fillers:
+  - ghar me
+  - abhi ke abhi
+
+# Extra out-of-scope sentences. Near misses belong here, not in the language files:
+# they use this domain's own words but ask for nothing the device can do.
+none_examples:
+  - "the light is nice today"
+  - "i am a big fan of cricket"
+  - "who invented the light bulb"
+  - "the fan of the engine is broken"
+  - "my bedroom is very messy"
+  - "the kitchen smells good"
+  - "what is the temperature of the sun"
+  - "how does a ceiling fan work"
+  - "light travels faster than sound"
+  - "i left my phone in the living room"
+  - "batti kaun si company ki hai"
+  - "pankha kitne ka aaya tha"
+  - "rasoi me kya bana hai"
+  - "bedroom ka darwaza kholo"
+  - "timer word ka matlab kya hai"
+  - "mujhe garmi lag rahi hai"
+  - "kal light chali gayi thi"
+  - "hall me kitne log hain"
+  - "fan ki awaaz achhi nahi hai"
+  - "light se aankhen dukh rahi hain"
 
 fallback:
   # The confidence below which the answer becomes "unsure" instead of an action.

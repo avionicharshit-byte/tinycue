@@ -1,0 +1,179 @@
+# edge-nlu example commands file: a small floor robot with a gripper.
+#
+# This file exists to show that nothing in edge-nlu is tied to one domain. It shares no
+# words with examples/smart_home.yaml, and it is trained and measured the same way.
+#
+# Markup in examples: [spoken words](slot_name)
+
+language: [en, hinglish]
+
+slots:
+
+  # Which way the robot goes or faces.
+  heading:
+    values:
+      forward: [forward, ahead, straight, aage, seedha]
+      back: [back, backward, backwards, reverse, peeche]
+      left: [left, baayen, baaye]
+      right: [right, daayen, daaye]
+
+  # How far to go, in steps.
+  steps:
+    type: number
+    min: 1
+    max: 100
+
+  # How far to turn, in degrees.
+  degrees:
+    type: number
+    min: 1
+    max: 180
+
+  # How fast to run.
+  rate:
+    values:
+      fast: [fast, faster, quick, quickly, tez, jaldi]
+      slow: [slow, slower, slowly, dheere, aaram se]
+      normal: [normal, medium, theek, sadharan]
+
+commands:
+
+  # Drive in a direction. The step count is required, but a sentence may leave it out,
+  # and the decoder then says which slot is missing.
+  - name: move
+    slots: [heading, steps]
+    examples:
+      - "move [forward](heading) [ten](steps) steps"
+      - "go [back](heading) [5](steps) steps"
+      - "[aage](heading) [das](steps) kadam chalo"
+      - "walk [ahead](heading) by [twenty](steps) steps"
+      - "[peeche](heading) [paanch](steps) step jao"
+      - "drive [straight](heading) for [fifteen](steps) steps"
+      - "move [left](heading)"
+      - "go [right](heading) [three](steps) steps"
+      - "[daayen](heading) [do](steps) kadam badho"
+      - "move [backwards](heading) [eight](steps) steps"
+      - "[seedha](heading) [bees](steps) kadam chalo"
+      - "step [left](heading) [4](steps) times"
+
+  # Turn on the spot.
+  - name: turn
+    slots:
+      - name: heading
+      - name: degrees
+        required: false
+    examples:
+      - "turn [left](heading) [ninety](degrees) degrees"
+      - "rotate [right](heading) by [45](degrees) degrees"
+      - "[baayen](heading) [nabbe](degrees) degree ghumo"
+      - "spin [right](heading)"
+      - "[daayen](heading) mudo"
+      - "turn [back](heading) [one hundred eighty](degrees) degrees"
+      - "turn [right](heading) [thirty](degrees) degrees"
+      - "[peeche](heading) [ek sau assi](degrees) degree ghoomo"
+      - "rotate [left](heading) by [60](degrees)"
+      - "[daaye](heading) [saath](degrees) degree mudo"
+      - "spin [back](heading)"
+      - "turn [left](heading) a bit"
+
+  # Stop everything. No slots at all.
+  - name: stop
+    examples:
+      - "stop"
+      - "stop right now"
+      - "halt everything"
+      - "ruk jao"
+      - "band karo movement"
+      - "freeze"
+      - "stop moving"
+      - "emergency stop"
+      - "abhi ruk jao"
+      - "cut the motors"
+      - "thehro"
+      - "sab band"
+
+  # Close the gripper.
+  - name: grab
+    examples:
+      - "grab it"
+      - "pick that up"
+      - "close the gripper"
+      - "hold on to it"
+      - "pakdo ise"
+      - "utha lo"
+      - "grab that object"
+      - "close your claw"
+      - "pick it up now"
+      - "haath se pakdo"
+      - "uthao ise"
+      - "gripper band karo"
+
+  # Open the gripper.
+  - name: release
+    examples:
+      - "release it"
+      - "let go"
+      - "open the gripper"
+      - "drop that"
+      - "chhod do"
+      - "neeche rakh do"
+      - "release the object"
+      - "open your claw"
+      - "put it down"
+      - "haath kholo"
+      - "chhod do ise"
+      - "gripper khol do"
+
+  # Set the driving speed.
+  - name: set_speed
+    slots: [rate]
+    examples:
+      - "go [fast](rate)"
+      - "set speed to [slow](rate)"
+      - "run at [normal](rate) speed"
+      - "[tez](rate) chalo"
+      - "[aaram se](rate) chalo"
+      - "speed [medium](rate) kar do"
+      - "drive [slowly](rate)"
+      - "go at [quick](rate) pace"
+      - "[sadharan](rate) speed par chalo"
+      - "make it [faster](rate)"
+      - "[jaldi](rate) chalo"
+      - "speed [slow](rate) karo"
+
+equivalents:
+  - [move, go, travel]
+  - [chalo, chalna, chal]
+  - [steps, step, kadam]
+  - [gripper, claw, hand]
+  - [turn, rotate, spin]
+  - [karo, kar do, kardo]
+
+fillers:
+  - robot
+  - ok robot
+
+none_examples:
+  - "how many steps did i walk today"
+  - "the robot vacuum is stuck"
+  - "who built the first robot"
+  - "my left arm hurts"
+  - "turn the page please"
+  - "what does forward mean"
+  - "stop signs are red"
+  - "i grabbed a coffee earlier"
+  - "speed of light is constant"
+  - "ninety degrees is a right angle"
+  - "kitne kadam chale aaj"
+  - "robot ka matlab kya hota hai"
+  - "mera haath dukh raha hai"
+  - "aage kya hone wala hai"
+  - "peeche wali gali me jao"
+  - "tez dhoop hai bahar"
+  - "gaadi dheere chalao kaha tha"
+  - "left hand se likhta hoon"
+
+fallback:
+  unsure_below: auto
+  none_command: true
+  on_unsure: ask

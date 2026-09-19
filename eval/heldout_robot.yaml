@@ -1,0 +1,126 @@
+# Held-out phrasings for examples/robot.yaml. Never train on this file.
+#
+# Same rules as eval/heldout_smart_home.yaml: new verbs, new word order, typos, missing
+# words. Some sentences leave out a required slot on purpose, so the decoder has to say
+# which slot is missing rather than inventing one.
+
+commands:
+
+  - name: move
+    examples:
+      - "advance [forward](heading) [six](steps) paces"
+      - "[aage](heading) ki taraf [char](steps) kadm"
+      - "crawl [back](heading) [7](steps)"
+      - "proceed [straight](heading) [nine](steps)"
+      - "[peeche](heading) hato [teen](steps)"
+      - "shift [left](heading) [two](steps)"
+      - "[daayen](heading) [paanch](steps) kadam khisko"
+      - "head [ahead](heading) about [fifteen](steps)"
+      - "[seedha](heading) [pachees](steps) tak"
+      - "roll [backwards](heading) [11](steps)"
+      - "[baaye](heading) [aath](steps) kadam"
+      - "mvoe [forward](heading)"
+      - "[reverse](heading) [30](steps)"
+
+  - name: turn
+    examples:
+      - "swivel [left](heading) [forty five](degrees)"
+      - "[daayen](heading) [tees](degrees) tak ghumna"
+      - "face [back](heading)"
+      - "pivot [right](heading) [120](degrees)"
+      - "[baayen](heading) [pachaas](degrees) degre"
+      - "yaw [left](heading) [15](degrees)"
+      - "[peeche](heading) ki or [ek sau assi](degrees)"
+      - "point [right](heading)"
+      - "[baaye](heading) thoda sa"
+      - "veer [left](heading) [twenty](degrees)"
+      - "[daaye](heading) [nabbe](degrees) tak"
+      - "swing [back](heading) [one hundred](degrees)"
+
+  - name: stop
+    examples:
+      - "quit moving now"
+      - "put the brakes on"
+      - "hold it right there"
+      - "shut down the wheels"
+      - "stpo"
+      - "rukna hai abhi"
+      - "sab kuch rok do"
+      - "chalna band"
+      - "brake lagao"
+      - "no more movement"
+      - "wahi ruko"
+      - "terminate motion"
+
+  - name: grab
+    examples:
+      - "seize that thing"
+      - "clamp down on it"
+      - "take hold of the block"
+      - "clutch it tight"
+      - "pkado usko"
+      - "haath band karo"
+      - "cheez utha lena"
+      - "hold the item"
+      - "squeeze the grip"
+      - "pakad lo ise"
+      - "lift that up"
+      - "grip it"
+
+  - name: release
+    examples:
+      - "let it fall"
+      - "unclamp the block"
+      - "loosen your grip"
+      - "set it down there"
+      - "chhoro ab"
+      - "haath dhila karo"
+      - "give it back"
+      - "cheez rakh do"
+      - "ungrip"
+      - "leave the item"
+      - "chhodna hai ise"
+      - "relase it"
+
+  - name: set_speed
+    examples:
+      - "crank it [faster](rate)"
+      - "pace should be [slow](rate)"
+      - "[tez](rate) bhago"
+      - "move at a [normal](rate) pace"
+      - "be [quick](rate) about it"
+      - "[dheere](rate) chalna"
+      - "throttle to [medium](rate)"
+      - "[aaram se](rate) badho"
+      - "kindly go [slowly](rate)"
+      - "[sadharan](rate) raftaar rakho"
+      - "step it up [quickly](rate)"
+      - "[jaldi](rate) badho"
+
+  - name: none
+    examples:
+      - "how many steps to the top floor"
+      - "my robot vacuum needs a filter"
+      - "left is the opposite of right"
+      - "stop and smell the roses"
+      - "grab a coffee with me later"
+      - "speed limits are in kilometres"
+      - "degrees of freedom in a joint"
+      - "the gripper broke last week"
+      - "which way is north"
+      - "ninety percent of the time"
+      - "turn of the century"
+      - "release date of the movie"
+      - "kadam kadam badhaye ja"
+      - "mera robot kharab ho gaya"
+      - "seedha raasta kaunsa hai"
+      - "peeche mud kar mat dekho"
+      - "tez dhoop me mat jao"
+      - "dheere dheere sab theek hoga"
+      - "haath dho lo pehle"
+      - "gaadi ki speed kitni thi"
+      - "so what were we saying"
+      - "hmm let me think about it"
+      - "and after that i guess"
+      - "never mind all of this"
+      - "tell me something interesting"
