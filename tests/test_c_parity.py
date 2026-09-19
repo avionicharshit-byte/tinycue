@@ -1,8 +1,8 @@
 """The C runtime has to answer exactly what Python answers.
 
 Every sentence of both hand-written held-out files, plus 300 generated sentences per
-spec, goes through both sides. The command, the slot values and the unsure flag must
-match, and the confidence must agree to 1e-3.
+spec, goes through both sides. The command, the slot values, the unsure flag and the
+gate evidence must match, and the confidence must agree to 1e-3.
 
 Python is run twice. Once with the float32 weights it trained, and once with the same
 weights rounded to the float16 the blob carries, which is what the C side actually reads.
@@ -16,13 +16,18 @@ import json
 import shutil
 import subprocess
 
-import numpy as np
 import pytest
 
 from conftest import EXAMPLE_FILE, REPO_ROOT, ROBOT_FILE
 from edgenlu import model as bundle
-from edgenlu.decode import decode
-from edgenlu.export import build_blob, crf_tables, dequantised_weights, export, fnv1a64
+from edgenlu.export import (
+    BLOB_VERSION,
+    build_blob,
+    crf_tables,
+    dequantised_weights,
+    export,
+    fnv1a64,
+)
 from edgenlu.generator import generate
 from edgenlu.parser import load_examples_file, load_spec, tokenize
 from edgenlu.train import train
@@ -159,19 +164,17 @@ def run_c(cli_path, blob, texts) -> list[dict]:
 
 
 def run_python(model, text) -> dict:
-    tokens = tokenize(text)
-    probabilities = model.intent_probabilities(tokens)
-    best = int(np.argmax(probabilities))
-    command = model.classes[best]
-    tags, slot_probability = model.tag(tokens)
-    result = decode(tokens, tags, command, model.spec)
-    confidence = model.confidence(float(probabilities[best]), slot_probability)
+    reading = model.read(tokenize(text))
     return {
-        "command": command,
-        "slots": dict(result.slots),
-        "missing": list(result.missing),
-        "confidence": confidence,
-        "unsure": confidence < model.unsure_below,
+        "command": reading.command,
+        "slots": dict(reading.decoded.slots),
+        "missing": list(reading.decoded.missing),
+        "confidence": reading.confidence,
+        "unsure": reading.unsure,
+        "unknown": reading.signals["unknown_count"],
+        "unknown_share": reading.signals["unknown_share"],
+        "all_carrier_unknown": bool(reading.signals["all_carrier_unknown"]),
+        "margin": reading.signals["margin"],
     }
 
 
@@ -196,6 +199,18 @@ def compare(got: dict, want: dict) -> str | None:
         return f"unsure {got['unsure']} against {want['unsure']}"
     if abs(got["confidence"] - want["confidence"]) > TOLERANCE:
         return f"confidence {got['confidence']:.6f} against {want['confidence']:.6f}"
+    if "unknown" in got:
+        if got["unknown"] != want["unknown"]:
+            return f"unknown words {got['unknown']} against {want['unknown']}"
+        if bool(got["all_carrier_unknown"]) != bool(want["all_carrier_unknown"]):
+            return (
+                f"all carrier words unknown {got['all_carrier_unknown']} against "
+                f"{want['all_carrier_unknown']}"
+            )
+        if abs(got["unknown_share"] - want["unknown_share"]) > 1e-6:
+            return f"unknown share {got['unknown_share']} against {want['unknown_share']}"
+        if abs(got["margin"] - want["margin"]) > TOLERANCE:
+            return f"margin {got['margin']:.6f} against {want['margin']:.6f}"
     return None
 
 
@@ -252,7 +267,7 @@ def test_the_device_build_answers_the_same(cli, cli_fast, models, name):
 def test_the_blob_starts_with_its_magic(models):
     blob = models["smart_home"]["blob"].read_bytes()
     assert blob[:4] == b"ENLU"
-    assert int.from_bytes(blob[4:8], "little") == 1
+    assert int.from_bytes(blob[4:8], "little") == BLOB_VERSION
     assert int.from_bytes(blob[8:12], "little") == len(blob)
 
 

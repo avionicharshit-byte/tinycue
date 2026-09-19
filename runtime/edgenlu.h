@@ -54,6 +54,14 @@ typedef struct {
     double slot_probability;
     int unsure;               /* 1 when the confidence is under the model's cut-off */
     int token_count;
+
+    /* The evidence behind the confidence. A word is known when the model trained on it,
+     * when it reads as a number, or when it appears in some slot's value list. */
+    int unknown_count;        /* words of this sentence the model has never seen */
+    double unknown_share;     /* unknown_count divided by token_count */
+    int carrier_unknown;      /* 1 when a word outside every slot span is unknown */
+    int all_carrier_unknown;  /* 1 when every word outside a slot span is unknown */
+    double intent_margin;     /* the top command's probability minus the second one's */
 } enlu_result;
 
 /* Pointers into the blob, worked out once by enlu_init. Treat it as opaque. */
@@ -97,6 +105,13 @@ typedef struct {
     uint32_t filler_count;
     const uint32_t *number_words;  /* pairs of (string offset, value) */
     const uint32_t *filler_words;
+
+    uint32_t vocab_count;
+    const uint32_t *vocab_hashes;  /* FNV-1a 32 of every training word, sorted */
+    uint32_t gate_count;
+    const uint32_t *gate_ids;      /* which signal each gate weight multiplies */
+    const float *gate_weights;
+    float gate_bias;
 } enlu_model;
 
 /* Point a model at a blob. The blob must stay put and stay 8 byte aligned. */

@@ -424,6 +424,7 @@ def _export(args) -> int:
     print(f"wrote {result['path']}")
     print(f"  {result['bytes'] / 1024:.1f} KB, {result['classes']} classes, "
           f"{result['labels']} tags, {result['table_size']} buckets")
+    print(f"  {result['vocabulary']} training words, {result['gate_weights']} gate weights")
     print(f"  plus model_data.h and model_data.c in {args.out}")
     return 0
 

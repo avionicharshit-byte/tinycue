@@ -9,7 +9,7 @@
 #define ENLU_MAGIC1 'N'
 #define ENLU_MAGIC2 'L'
 #define ENLU_MAGIC3 'U'
-#define ENLU_BLOB_VERSION 1u
+#define ENLU_BLOB_VERSION 2u
 #define ENLU_HEADER_SIZE 32u
 #define ENLU_DIR_ENTRY 16u
 
@@ -18,9 +18,28 @@
 #define SECTION_CRF 3u
 #define SECTION_SPEC 4u
 #define SECTION_NUMBERS 5u
+#define SECTION_GATE 6u
 
 #define NO_INDEX 0xFFFFFFFFu
 #define KIND_NUMBER 1u
+
+/* The gate signals, in the order src/edgenlu/gate.py fixes them. A blob names the ones
+ * its weights use, so a model may use any subset. */
+#define GATE_FEATURES 8
+#define GATE_INTENT_LOGIT 0
+#define GATE_SLOT_LOGPROB 1
+#define GATE_UNKNOWN_SHARE 2
+#define GATE_ALL_CARRIER_UNKNOWN 3
+#define GATE_MARGIN 4
+#define GATE_MISSING_REQUIRED 5
+#define GATE_OPEN_VALUE 6
+#define GATE_PREDICTED_NONE 7
+
+/* Part of the format: the two log features are divided by this, and the probabilities
+ * are pinned away from 0 and 1 first. */
+#define GATE_LOG_SCALE 5.0
+#define GATE_PROB_FLOOR 1e-6
+#define GATE_SLOT_FLOOR 1e-9
 
 #define CMD_WORDS 4
 #define CMDSLOT_WORDS 3
@@ -192,6 +211,7 @@ int enlu_init(enlu_model *model, const uint8_t *blob, size_t len)
     const uint8_t *crf;
     const uint8_t *spec;
     const uint8_t *numbers;
+    const uint8_t *gate;
     const uint8_t *strings;
     uint32_t size;
     uint32_t count;
@@ -229,7 +249,8 @@ int enlu_init(enlu_model *model, const uint8_t *blob, size_t len)
     crf = find_section(blob, len, count, SECTION_CRF, &size);
     spec = find_section(blob, len, count, SECTION_SPEC, &size);
     numbers = find_section(blob, len, count, SECTION_NUMBERS, &size);
-    if (!strings || !intent || !crf || !spec || !numbers) {
+    gate = find_section(blob, len, count, SECTION_GATE, &size);
+    if (!strings || !intent || !crf || !spec || !numbers || !gate) {
         return ENLU_BAD_BLOB;
     }
     model->strings = (const char *)strings;
@@ -287,6 +308,24 @@ int enlu_init(enlu_model *model, const uint8_t *blob, size_t len)
     model->filler_count = read_u32(numbers + 4);
     model->number_words = (const uint32_t *)(const void *)(numbers + read_u32(numbers + 8));
     model->filler_words = (const uint32_t *)(const void *)(numbers + read_u32(numbers + 12));
+
+    model->vocab_count = read_u32(gate);
+    model->vocab_hashes = (const uint32_t *)(const void *)(gate + read_u32(gate + 4));
+    model->gate_count = read_u32(gate + 8);
+    model->gate_ids = (const uint32_t *)(const void *)(gate + read_u32(gate + 12));
+    model->gate_weights = (const float *)(const void *)(gate + read_u32(gate + 16));
+    model->gate_bias = read_f32(gate + 20);
+    if (read_u32(gate + 24) != (uint32_t)GATE_FEATURES) {
+        return ENLU_BAD_BLOB;
+    }
+    {
+        uint32_t i;
+        for (i = 0; i < model->gate_count; i++) {
+            if (model->gate_ids[i] >= (uint32_t)GATE_FEATURES) {
+                return ENLU_BAD_BLOB;
+            }
+        }
+    }
     return ENLU_OK;
 }
 
@@ -330,6 +369,7 @@ typedef struct {
     char join[ENLU_RAW_MAX];
     char surface[ENLU_MAX_SLOTS][ENLU_MAX_SURFACE];
     uint8_t tag[ENLU_MAX_TOKENS];
+    uint8_t known[ENLU_MAX_TOKENS];
     double *state;
     double *delta;
     double *alpha;
@@ -1059,6 +1099,133 @@ static void decode_tags(const enlu_model *model, enlu_work *work, uint32_t comma
     }
 }
 
+/* -------------------------------------------------------------------- gate */
+
+/* Is this word one the model trained on, one that reads as a number, or one that some
+ * slot's value list holds? Anything else is a word it has never seen, and the features
+ * are hashed n-grams, so such a word contributes nothing and the rest decide alone.
+ * gate.known_flags in src/edgenlu/gate.py asks the same three questions in this order. */
+static int token_is_known(const enlu_model *model, const enlu_work *work, int index)
+{
+    const char *word = work->token[index];
+    int len = work->token_len[index];
+    uint32_t hash = fnv32_bytes(fnv32_start(), word, (size_t)len);
+    uint32_t low = 0;
+    uint32_t high = model->vocab_count;
+    uint32_t j;
+
+    while (low < high) {
+        uint32_t mid = low + (high - low) / 2u;
+        uint32_t value = model->vocab_hashes[mid];
+        if (value < hash) {
+            low = mid + 1u;
+        } else if (value > hash) {
+            high = mid;
+        } else {
+            return 1;
+        }
+    }
+    if (is_number_token(model, work, index)) {
+        return 1;
+    }
+    for (j = 0; j < model->type_count; j++) {
+        const uint32_t *record = model->slot_types + (size_t)j * TYPE_WORDS;
+        if (record[7] != 0u && in_gazetteer(model, j, word, len)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* The unknown word counts, and whether the words outside every slot span are all new. */
+static void gate_evidence(const enlu_model *model, enlu_work *work, enlu_result *out)
+{
+    int i;
+    int carriers = 0;
+    int carriers_unknown = 0;
+
+    out->unknown_count = 0;
+    for (i = 0; i < work->count; i++) {
+        int known = token_is_known(model, work, i);
+        work->known[i] = (uint8_t)known;
+        if (!known) {
+            out->unknown_count++;
+        }
+        if (model->label_type[work->tag[i]] == NO_INDEX) {
+            carriers++;
+            if (!known) {
+                carriers_unknown++;
+            }
+        }
+    }
+    out->unknown_share = work->count > 0 ? (double)out->unknown_count / (double)work->count : 0.0;
+    out->carrier_unknown = carriers_unknown > 0;
+    out->all_carrier_unknown = carriers > 0 && carriers_unknown == carriers;
+}
+
+/* The eight signals, in the order the format fixes. gate.feature_vector does the same. */
+static void gate_vector(const enlu_result *out, double *feature)
+{
+    double intent = out->intent_probability;
+    double slot = out->slot_probability;
+    int i;
+    int open_value = 0;
+
+    if (intent < GATE_PROB_FLOOR) {
+        intent = GATE_PROB_FLOOR;
+    }
+    if (intent > 1.0 - GATE_PROB_FLOOR) {
+        intent = 1.0 - GATE_PROB_FLOOR;
+    }
+    if (slot < GATE_SLOT_FLOOR) {
+        slot = GATE_SLOT_FLOOR;
+    }
+    if (slot > 1.0) {
+        slot = 1.0;
+    }
+    for (i = 0; i < out->slot_count; i++) {
+        if (!out->slots[i].known) {
+            open_value = 1;
+        }
+    }
+
+    feature[GATE_INTENT_LOGIT] = log(intent / (1.0 - intent)) / GATE_LOG_SCALE;
+    feature[GATE_SLOT_LOGPROB] = log(slot) / GATE_LOG_SCALE;
+    feature[GATE_UNKNOWN_SHARE] = out->unknown_share;
+    feature[GATE_ALL_CARRIER_UNKNOWN] = out->all_carrier_unknown ? 1.0 : 0.0;
+    feature[GATE_MARGIN] = out->intent_margin;
+    feature[GATE_MISSING_REQUIRED] = out->missing_count > 0 ? 1.0 : 0.0;
+    feature[GATE_OPEN_VALUE] = open_value ? 1.0 : 0.0;
+    feature[GATE_PREDICTED_NONE] = out->is_none ? 1.0 : 0.0;
+}
+
+/* The chance the whole answer is right. With no weights in the blob this falls back to
+ * the old product of the two probabilities. */
+static double gate_confidence(const enlu_model *model, const enlu_result *out)
+{
+    double feature[GATE_FEATURES];
+    double total;
+    uint32_t i;
+
+    if (model->gate_count == 0u) {
+        double slot = out->slot_probability < 0.0 ? 0.0 : out->slot_probability;
+        return out->intent_probability * pow(slot, (double)model->slot_power);
+    }
+
+    gate_vector(out, feature);
+    total = (double)model->gate_bias;
+    for (i = 0; i < model->gate_count; i++) {
+        total += (double)model->gate_weights[i] * feature[model->gate_ids[i]];
+    }
+    if (total >= 0.0) {
+        return 1.0 / (1.0 + exp(-total));
+    }
+    {
+        double value = exp(total);
+        return value / (1.0 + value);
+    }
+}
+
 /* ------------------------------------------------------------------- parse */
 
 int enlu_parse(const enlu_model *model, const char *text, enlu_result *out, void *scratch,
@@ -1116,6 +1283,19 @@ int enlu_parse(const enlu_model *model, const char *text, enlu_result *out, void
         }
     }
 
+    /* How far ahead the winner is. One class means nothing to compare it with. */
+    if (model->class_count < 2u) {
+        out->intent_margin = 1.0;
+    } else {
+        double second = -1.0;
+        for (k = 0; k < model->class_count; k++) {
+            if (k != best && scores[k] > second) {
+                second = scores[k];
+            }
+        }
+        out->intent_margin = scores[best] - second;
+    }
+
     out->command = model->strings + model->class_names[best];
     out->intent_probability = scores[best];
     out->slot_probability = tag_sentence(model, work);
@@ -1124,13 +1304,8 @@ int enlu_parse(const enlu_model *model, const char *text, enlu_result *out, void
         decode_tags(model, work, model->class_command[best], out);
     }
 
-    {
-        double slot = out->slot_probability;
-        if (slot < 0.0) {
-            slot = 0.0;
-        }
-        out->confidence = out->intent_probability * pow(slot, (double)model->slot_power);
-    }
+    gate_evidence(model, work, out);
+    out->confidence = gate_confidence(model, out);
     out->unsure = out->confidence < (double)model->unsure_below;
     return ENLU_OK;
 }

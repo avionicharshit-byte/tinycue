@@ -186,9 +186,12 @@ int main(int argc, char **argv)
             }
             print_json_string(result.missing[slot]);
         }
-        printf("],\"confidence\":%.6f,\"intent\":%.6f,\"slot\":%.6f,\"unsure\":%s,"
-               "\"micros\":%.1f}\n",
+        printf("],\"confidence\":%.6f,\"intent\":%.6f,\"slot\":%.6f,\"margin\":%.6f,"
+               "\"unknown\":%d,\"unknown_share\":%.6f,\"all_carrier_unknown\":%s,"
+               "\"unsure\":%s,\"micros\":%.1f}\n",
                result.confidence, result.intent_probability, result.slot_probability,
+               result.intent_margin, result.unknown_count, result.unknown_share,
+               result.all_carrier_unknown ? "true" : "false",
                result.unsure ? "true" : "false", micros);
         fflush(stdout);
     }

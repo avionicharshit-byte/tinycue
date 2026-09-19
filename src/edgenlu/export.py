@@ -25,7 +25,7 @@ from .numbers import FILLER_WORDS, NUMBER_WORDS
 from .schema import NONE_COMMAND, NUMBER, OUTSIDE
 
 MAGIC = b"ENLU"
-BLOB_VERSION = 1
+BLOB_VERSION = 2
 HEADER_SIZE = 32
 DIRECTORY_ENTRY = 16
 SECTION_ALIGN = 8
@@ -35,7 +35,15 @@ SECTION_INTENT = 2
 SECTION_CRF = 3
 SECTION_SPEC = 4
 SECTION_NUMBERS = 5
-SECTION_IDS = (SECTION_STRINGS, SECTION_INTENT, SECTION_CRF, SECTION_SPEC, SECTION_NUMBERS)
+SECTION_GATE = 6
+SECTION_IDS = (
+    SECTION_STRINGS,
+    SECTION_INTENT,
+    SECTION_CRF,
+    SECTION_SPEC,
+    SECTION_NUMBERS,
+    SECTION_GATE,
+)
 
 WEIGHT_FLOAT16 = 1
 KIND_VALUES = 0
@@ -329,6 +337,35 @@ def _numbers_section(strings: Strings) -> bytes:
     return section.bytes()
 
 
+def _gate_section(model: Model) -> bytes:
+    """The training vocabulary and the gate weights, the two things the cut-off needs.
+
+    The vocabulary is a sorted array of 32 bit hashes, not words, so the device can say
+    "the model has never seen this word" with a binary search and a few kilobytes. The
+    weights are a handful of floats and an id each, so a model may use any subset of the
+    signals and an older runtime still reads it.
+    """
+    from . import gate
+
+    hashes = sorted(set(int(h) & 0xFFFFFFFF for h in model.vocabulary))
+    calibrator = model.calibrator
+    ids = list(calibrator.feature_ids) if calibrator is not None else []
+    weights = list(calibrator.weights) if calibrator is not None else []
+    bias = float(calibrator.bias) if calibrator is not None else 0.0
+    if any(i < 0 or i >= gate.FEATURE_COUNT for i in ids):
+        raise ExportError(f"a gate weight names a signal this format has no slot for: {ids}")
+
+    section = Section(32)
+    section.set_head(0, len(hashes))
+    section.set_head(4, section.place(_u32_array(hashes)))
+    section.set_head(8, len(weights))
+    section.set_head(12, section.place(_u32_array(ids)))
+    section.set_head(16, section.place(_f32_array(weights)))
+    section.set_head_float(20, bias)
+    section.set_head(24, gate.FEATURE_COUNT)
+    return section.bytes()
+
+
 def build_blob(model: Model) -> bytes:
     """The whole model as one byte string, ready for flash."""
     strings = Strings()
@@ -338,6 +375,7 @@ def build_blob(model: Model) -> bytes:
     crf = _crf_section(tables, strings)
     spec = _spec_section(model, tables["labels"], strings)
     numbers = _numbers_section(strings)
+    gate_body = _gate_section(model)
     pool = bytes(strings.data)
 
     bodies = {
@@ -346,6 +384,7 @@ def build_blob(model: Model) -> bytes:
         SECTION_CRF: crf,
         SECTION_SPEC: spec,
         SECTION_NUMBERS: numbers,
+        SECTION_GATE: gate_body,
     }
 
     out = bytearray()
@@ -414,6 +453,8 @@ def export(model_dir, out_dir) -> dict:
         "classes": len(loaded.classes),
         "table_size": loaded.table_size,
         "labels": len(loaded.spec.tag_set()),
+        "vocabulary": len(set(loaded.vocabulary)),
+        "gate_weights": len(loaded.calibrator.weights) if loaded.calibrator else 0,
         "path": out / BLOB_FILE,
     }
 
