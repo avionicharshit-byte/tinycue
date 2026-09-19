@@ -700,3 +700,32 @@
     - "pankha chhat se latka hua hai"
     - "batti wala aaya tha bill lene"
     - "kamre me dhoop aa rahi hai"
+
+# ---------------------------------------------------------------------------
+# Round four: the command words used as ordinary nouns and adjectives, which is
+# where the "no command" class was losing
+# ---------------------------------------------------------------------------
+
+- answer: none
+  say:
+    - "the fan belt snapped on the bike"
+    - "a table fan is on sale this week"
+    - "fan mail arrives here every day"
+    - "the extractor fan cover is dirty"
+    - "pankhe ka belt toot gaya"
+    - "light weight metal is expensive"
+    - "the box is light enough to carry"
+    - "travel light next time"
+    - "halka phulka khana chahiye"
+    - "saman halka hai utha lo"
+
+- answer: none
+  say:
+    - "tell me a fact about the moon"
+    - "show me the photos from yesterday"
+    - "what is the price of onions today"
+    - "batao kya karna chahiye ab"
+    - "mujhe kuch dikhao interesting"
+    - "read out the news headlines"
+    - "check my messages please"
+    - "what is on the calendar tomorrow"
