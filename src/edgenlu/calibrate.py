@@ -110,6 +110,8 @@ class Report:
     cutoff: Cutoff = field(default_factory=lambda: Cutoff(value=0.0))
     buckets: list[Bucket] = field(default_factory=list)
     count: int = 0
+    # False when the set only carries answers, so the slot numbers are value level.
+    spans_labelled: bool = True
 
 
 def reliability(confidences, correct, buckets: int = BUCKETS) -> list[Bucket]:

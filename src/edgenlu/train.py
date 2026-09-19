@@ -19,7 +19,9 @@ from pathlib import Path
 import numpy as np
 
 from . import features as F
+from . import gate
 from . import model as bundle
+from . import stress as stress_data
 from .calibrate import (
     TARGET_ACCURACY,
     Cutoff,
@@ -37,6 +39,15 @@ C2 = 0.1
 MAX_CRF_ITERATIONS = 100
 L2_STRENGTH = 1.0
 MAX_INTENT_ITERATIONS = 400
+
+# How many roughed up copies of each dev sentence the gate is fitted on, and how many
+# generated training sentences get one copy each. Both are there so the calibrator sees
+# words the model has never met; see stress.py.
+STRESS_COPIES = 3
+STRESS_GENERATED = 300
+# Folds for the cross-validation that picks the cut-off. Rows are grouped by the sentence
+# they came from, so a copy never sits in a different fold from its original.
+GATE_FOLDS = 5
 
 
 @dataclass
@@ -161,6 +172,10 @@ class TrainResult:
     # True when the cut-off was fitted on a hand-written dev file, not the generated split.
     hand_written_dev: bool = False
     target: float = TARGET_ACCURACY
+    # The gate weights that went into the bundle, or None when the old product was kept.
+    calibrator: object = None
+    # Plain numbers about how well the gate holds up, for the doctor report.
+    gate_health: dict = field(default_factory=dict)
 
 
 def train(
@@ -172,6 +187,10 @@ def train(
     log=print,
     dev_examples=None,
     target: float = TARGET_ACCURACY,
+    gate_features=gate.CORE_FEATURES,
+    stress_copies: int = STRESS_COPIES,
+    stress_generated: int = STRESS_GENERATED,
+    folds: int = GATE_FOLDS,
 ) -> TrainResult:
     """Generate, split, fit both models, calibrate and save the bundle.
 
@@ -229,31 +248,69 @@ def train(
         temperature = fit_temperature(scores, labels)
         log(f"temperature: {temperature:.3f}")
 
-    bundle.save(
-        out_dir,
-        spec,
-        classes,
-        weights,
-        bias,
-        temperature,
-        1.0,
-        table_size,
-        unsure_below=0.0,
-        extra=meta_extra,
-    )
+    words = {token for e in training for token in e.tokens}
+    vocabulary = gate.hash_words(words)
 
+    def write(power: float, cut: float, calibrator=None) -> None:
+        bundle.save(
+            out_dir,
+            spec,
+            classes,
+            weights,
+            bias,
+            temperature,
+            power,
+            table_size,
+            unsure_below=cut,
+            extra=meta_extra,
+            vocabulary=vocabulary,
+            calibrator=calibrator,
+        )
+
+    write(1.0, 0.0)
     loaded = bundle.load(out_dir)
     slot_power = 1.0
+    calibrator = None
+    health: dict = {}
     if calibration:
         intent_probabilities, slot_probabilities, correct = _dev_parts(loaded, calibration, spec)
         slot_power = fit_slot_power(intent_probabilities, slot_probabilities, correct)
         log(f"tagger probability power: {slot_power:.3f}")
-        confidences = [
-            i * (s ** slot_power) for i, s in zip(intent_probabilities, slot_probabilities)
-        ]
-        cutoff = choose_cutoff(confidences, correct, target=target)
-        trade_off = cutoff_table(confidences, correct)
+        write(slot_power, 0.0)
+        loaded = bundle.load(out_dir)
+
+        fit_set = _gate_set(
+            calibration, training, words, seed, stress_copies, stress_generated
+        )
+        vectors, labels, groups, kinds = _gate_rows(loaded, fit_set)
+        if gate_features:
+            calibrator = gate.fit(vectors, labels, feature_ids=list(gate_features))
+        if calibrator is not None:
+            scores = gate.out_of_fold(
+                vectors, labels, groups, feature_ids=list(gate_features), folds=folds
+            )
+            fitted_on = (
+                f"{len(calibration)} dev sentences and "
+                f"{len(fit_set) - len(calibration)} roughed up copies"
+            )
+            log(
+                f"gate: {len(calibrator.weights)} weights over "
+                + ", ".join(gate.FEATURE_NAMES[i] for i in calibrator.feature_ids)
+                + f", fitted on {fitted_on}"
+            )
+        else:
+            scores = [
+                i * (s ** slot_power) for i, s in zip(intent_probabilities, slot_probabilities)
+            ]
+            labels = list(correct)
+            kinds = ["dev"] * len(labels)
+            log("gate: no calibrator, the confidence is the old product")
+
+        cutoff = choose_cutoff(scores, labels, target=target)
+        trade_off = cutoff_table(scores, labels)
         where = "hand-written dev" if hand_written else "the generated dev split"
+        if calibrator is not None:
+            where += " plus the roughed up copies, out of fold"
         if isinstance(spec.fallback.unsure_below, float):
             chosen = float(spec.fallback.unsure_below)
             log(f"cut-off pinned by the commands file: {chosen:.3f}")
@@ -272,18 +329,8 @@ def train(
                 )
         for row in _trade_off_lines(trade_off, chosen, target):
             log(row)
-        bundle.save(
-            out_dir,
-            spec,
-            classes,
-            weights,
-            bias,
-            temperature,
-            slot_power,
-            table_size,
-            unsure_below=chosen,
-            extra=meta_extra,
-        )
+        health = _gate_health(scores, labels, kinds, chosen)
+        write(slot_power, chosen, calibrator)
 
     seconds = time.time() - started
     return TrainResult(
@@ -295,11 +342,65 @@ def train(
         cutoff=cutoff,
         seconds=seconds,
         examples=len(examples),
-        vocabulary={token for e in training for token in e.tokens},
+        vocabulary=words,
         trade_off=trade_off,
         hand_written_dev=bool(hand_written),
         target=float(target),
+        calibrator=calibrator,
+        gate_health=health,
     )
+
+
+def _gate_set(calibration, training, words, seed, copies, generated):
+    """The sentences the gate is fitted on: the dev set and roughed up copies of it.
+
+    Copies of a sample of the generated training sentences come too. The model has seen
+    those, so on their own they teach nothing, but once a carrier word is a word nobody
+    has ever written they are exactly the case the gate exists for.
+    """
+    out = list(calibration)
+    if copies > 0:
+        out.extend(stress_data.stress(calibration, words, seed=seed, copies=copies))
+    if generated > 0 and training:
+        rng = random.Random(seed + 7)
+        sample = training if len(training) <= generated else rng.sample(training, generated)
+        out.extend(stress_data.stress(sample, words, seed=seed + 1, copies=1))
+    return out
+
+
+def _gate_rows(loaded: bundle.Model, examples):
+    """Feature vectors, whether each answer was right, its group and where it came from."""
+    vectors = []
+    labels = []
+    groups = []
+    kinds = []
+    for example in examples:
+        reading = loaded.read(example.tokens)
+        right = reading.command == example.command and reading.decoded.slots == dict(
+            example.slots
+        )
+        vectors.append(gate.feature_vector(reading.signals))
+        labels.append(bool(right))
+        groups.append(example.frame or " ".join(example.tokens))
+        kinds.append("dev" if example.labelled else "stress")
+    return vectors, labels, groups, kinds
+
+
+def _gate_health(scores, labels, kinds, cut: float) -> dict:
+    """How often an accepted answer is right, on plain sentences and on roughed up ones."""
+
+    def measure(wanted: str) -> dict:
+        picked = [i for i, kind in enumerate(kinds) if kind == wanted]
+        accepted = [i for i in picked if scores[i] >= cut]
+        return {
+            "count": len(picked),
+            "accepted": len(accepted),
+            "accepted_accuracy": (
+                sum(1 for i in accepted if labels[i]) / len(accepted) if accepted else None
+            ),
+        }
+
+    return {"dev": measure("dev"), "stress": measure("stress")}
 
 
 def _trade_off_lines(rows, chosen: float, target: float) -> list[str]:

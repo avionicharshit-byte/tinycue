@@ -10,29 +10,29 @@ from pathlib import Path
 
 from . import answers, doctor as doctor_report, evaluate, model as bundle
 from .calibrate import TARGET_ACCURACY
-from .decode import decode
 from .features import DEFAULT_BUCKETS
 from .generator import generate
 from .parser import load_examples_file, load_spec, tokenize
 from .schema import NUMBER, SpecError
 from .train import read_jsonl, train, write_jsonl
 
-# A file here is the final exam. Reading it during the improvement loop is how a model
-# comes to look good on paper and fail on the device.
+# A file here is a test set, not a tuning set. `heldout` is the final exam and `stranger`
+# is the set somebody else wrote blind. Fitting anything on either is how a model comes to
+# look good on paper and fail on the device.
 HELDOUT_DIR = "eval"
-HELDOUT_PREFIX = "heldout"
+HELDOUT_PREFIXES = ("heldout", "stranger")
 
 
 def _guard_heldout(paths, allow: bool) -> None:
-    """Stop a held-out file being trained on, tuned on or picked apart by accident."""
+    """Stop a test set being trained on, tuned on or picked apart by accident."""
     if allow:
         return
     for raw in paths or []:
         path = Path(raw)
-        if HELDOUT_DIR in path.parts and path.name.startswith(HELDOUT_PREFIX):
+        if HELDOUT_DIR in path.parts and path.name.startswith(HELDOUT_PREFIXES):
             raise SpecError(
-                f"{path} looks like a held-out final test set. Measuring against it while "
-                "you improve the model spends the only honest number you have. "
+                f"{path} looks like a held-out test set that nothing may be fitted on. "
+                "Training or tuning against it spends the only honest number you have. "
                 "Pass --allow-heldout if you really mean it."
             )
 
@@ -168,6 +168,9 @@ def main(argv: list[str] | None = None) -> int:
     ps = sub.add_parser("parse", help="read one sentence with a trained bundle")
     ps.add_argument("model", help="path to the model bundle")
     ps.add_argument("text", nargs="+", help="the sentence to read")
+    ps.add_argument(
+        "--json", action="store_true", help="print the answer and the gate evidence as JSON"
+    )
 
     args = parser.parse_args(argv)
     try:
@@ -342,8 +345,26 @@ def _doctor(args) -> int:
     return 0
 
 
+def _is_answer_first(path) -> bool:
+    """True for a file written answer first, false for the older 'commands:' layout."""
+    import yaml
+
+    raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    if isinstance(raw, list):
+        return True
+    return isinstance(raw, dict) and any(key in raw for key in answers.LIST_KEYS)
+
+
 def _load_data(path: str, spec):
+    """Read a test set, whichever of the three shapes it is written in.
+
+    An answer-first file is read without working out where each slot value is said, so a
+    sentence whose wording the commands file has never listed still counts. It is scored
+    on the command and the slot values instead of on the spans.
+    """
     if str(path).endswith((".yaml", ".yml")):
+        if _is_answer_first(path):
+            return answers.load_answers([path], spec)
         return load_examples_file(path, spec)
     return read_jsonl(path)
 
@@ -354,10 +375,11 @@ def _eval(args) -> int:
     cutoff = args.cutoff if args.cutoff is not None else loaded.unsure_below
     report, answers = evaluate.report(loaded, examples, cutoff=cutoff)
 
+    level = "span" if report.spans_labelled else "value"
     print(f"{args.data}: {report.count} sentences")
     print(f"intent accuracy:       {report.intent_accuracy * 100:.1f}%")
     print(
-        f"slot f1:               {report.slot_f1 * 100:.1f}% "
+        f"slot f1 ({level}):       {report.slot_f1 * 100:.1f}% "
         f"(precision {report.slot_precision * 100:.1f}%, "
         f"recall {report.slot_recall * 100:.1f}%)"
     )
@@ -413,21 +435,38 @@ def _parse(args) -> int:
         print("error: nothing to read", file=sys.stderr)
         return 1
 
-    probabilities = loaded.intent_probabilities(tokens)
-    best = int(probabilities.argmax())
-    command = loaded.classes[best]
-    tags, slot_probability = loaded.tag(tokens)
-    result = decode(tokens, tags, command, loaded.spec)
-    confidence = loaded.confidence(float(probabilities[best]), slot_probability)
+    reading = loaded.read(tokens)
+    if args.json:
+        print(json.dumps(_parse_json(reading), ensure_ascii=False))
+        return 0
 
-    line = f"{result.call()} confidence={confidence:.2f}"
-    if result.missing:
-        line += f" missing: {', '.join(result.missing)}"
-    if confidence < loaded.unsure_below:
+    line = f"{reading.decoded.call()} confidence={reading.confidence:.2f}"
+    if reading.decoded.missing:
+        line += f" missing: {', '.join(reading.decoded.missing)}"
+    if reading.unsure:
         print(f"unsure (best guess: {line})")
     else:
         print(line)
     return 0
+
+
+def _parse_json(reading) -> dict:
+    """The same answer as JSON, with the evidence the gate used, like the C tool prints."""
+    signals = reading.signals
+    return {
+        "text": " ".join(reading.tokens),
+        "command": reading.command,
+        "slots": dict(reading.decoded.slots),
+        "missing": list(reading.decoded.missing),
+        "confidence": round(reading.confidence, 6),
+        "intent": round(reading.intent_probability, 6),
+        "slot": round(reading.slot_probability, 6),
+        "margin": round(signals["margin"], 6),
+        "unknown": signals["unknown_count"],
+        "unknown_share": round(signals["unknown_share"], 6),
+        "all_carrier_unknown": bool(signals["all_carrier_unknown"]),
+        "unsure": bool(reading.unsure),
+    }
 
 
 if __name__ == "__main__":

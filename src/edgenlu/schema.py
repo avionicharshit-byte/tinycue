@@ -79,6 +79,10 @@ class Example:
     text: str = ""
     # Which hand-written sentence this grew from. Splits are made by frame.
     frame: str = ""
+    # False when only the answer is known and nobody marked where the slots are said.
+    # Such a sentence can still be scored on the command and the slot values, which is
+    # what a user cares about, but not on where the spans fell.
+    labelled: bool = True
 
     def as_dict(self) -> dict:
         return {

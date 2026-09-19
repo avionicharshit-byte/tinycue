@@ -15,12 +15,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
 
 from . import features as F
+from . import gate
+from .decode import Decoded, decode
 from .schema import (
     NONE_COMMAND,
     NUMBER,
@@ -31,7 +33,7 @@ from .schema import (
     Spec,
 )
 
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2
 INTENT_FILE = "intent.npz"
 SLOTS_FILE = "slots.crfsuite"
 META_FILE = "meta.json"
@@ -101,6 +103,23 @@ def spec_from_json(raw: dict) -> Spec:
 
 
 @dataclass
+class Reading:
+    """Everything one sentence produced: the answer, the evidence and the confidence."""
+
+    tokens: list[str]
+    command: str
+    is_none: bool
+    probabilities: np.ndarray
+    intent_probability: float
+    tags: list[str]
+    slot_probability: float
+    decoded: Decoded
+    signals: dict
+    confidence: float
+    unsure: bool
+
+
+@dataclass
 class Model:
     """A trained bundle, ready to answer."""
 
@@ -114,6 +133,10 @@ class Model:
     unsure_below: float
     meta: dict
     tagger_path: str
+    # FNV-1a 32 of every word the two models were trained on, sorted.
+    vocabulary: list[int] = field(default_factory=list)
+    # The weights that turn the signals into a confidence, or None for the old product.
+    calibrator: gate.Calibrator | None = None
 
     _tagger = None
 
@@ -133,6 +156,20 @@ class Model:
         if not hasattr(self, "_gaz"):
             self._gaz = F.gazetteer(self.spec)
         return self._gaz
+
+    @property
+    def vocabulary_set(self) -> set[int]:
+        """The training vocabulary as a set, for the unknown word check."""
+        if not hasattr(self, "_vocab_set"):
+            self._vocab_set = set(self.vocabulary)
+        return self._vocab_set
+
+    @property
+    def slot_words(self) -> set[str]:
+        """Every word that appears in any slot value, across all slot types."""
+        if not hasattr(self, "_slot_words"):
+            self._slot_words = {w for words in self.gazetteer.values() for w in words}
+        return self._slot_words
 
     def intent_scores(self, tokens) -> np.ndarray:
         """The raw score per class, before the temperature and the softmax."""
@@ -158,8 +195,52 @@ class Model:
         return tags, probability
 
     def confidence(self, intent_probability: float, slot_probability: float) -> float:
-        """The one number the caller sees: the intent part times the calibrated tagger part."""
+        """The old confidence: the intent part times the calibrated tagger part.
+
+        Still here because a model with no calibrator in it falls back to this, and
+        because the parity test and the trade-off tables compare the two.
+        """
         return float(intent_probability) * float(max(slot_probability, 0.0)) ** self.slot_power
+
+    def read(self, tokens) -> Reading:
+        """Run one sentence all the way through: answer, evidence and confidence."""
+        tokens = list(tokens)
+        probabilities = self.intent_probabilities(tokens)
+        best = int(np.argmax(probabilities))
+        command = self.classes[best]
+        intent_probability = float(probabilities[best])
+        tags, slot_probability = self.tag(tokens)
+        result = decode(tokens, tags, command, self.spec)
+        is_none = command == NONE_COMMAND
+
+        known = gate.known_flags(tokens, self.vocabulary_set, self.slot_words)
+        signals = gate.evidence(
+            tokens,
+            tags,
+            known,
+            probabilities,
+            slot_probability,
+            result.missing,
+            any(not s.known for s in result.found),
+            is_none,
+        )
+        if self.calibrator is not None:
+            confidence = self.calibrator.score(signals)
+        else:
+            confidence = self.confidence(intent_probability, slot_probability)
+        return Reading(
+            tokens=tokens,
+            command=command,
+            is_none=is_none,
+            probabilities=probabilities,
+            intent_probability=intent_probability,
+            tags=tags,
+            slot_probability=slot_probability,
+            decoded=result,
+            signals=signals,
+            confidence=confidence,
+            unsure=confidence < self.unsure_below,
+        )
 
 
 def softmax(scores: np.ndarray) -> np.ndarray:
@@ -180,6 +261,8 @@ def save(
     table_size: int,
     unsure_below: float,
     extra: dict | None = None,
+    vocabulary: list[int] | None = None,
+    calibrator=None,
 ) -> Path:
     """Write a bundle. The CRFsuite file is written separately by the trainer."""
     directory = Path(directory)
@@ -209,7 +292,13 @@ def save(
         },
         "intent": {"classes": list(classes), "temperature": float(temperature)},
         "slots": {"sequence_probability_power": float(slot_power)},
-        "confidence": "intent probability * crf sequence probability ** power",
+        "confidence": (
+            "logistic regression over the gate signals"
+            if calibrator is not None
+            else "intent probability * crf sequence probability ** power"
+        ),
+        "vocabulary_hashes": [int(h) for h in (vocabulary or [])],
+        "calibrator": calibrator.as_json() if calibrator is not None else None,
         "unsure_below": float(unsure_below),
         "on_unsure": spec.fallback.on_unsure,
         "spec": spec_to_json(spec),
@@ -238,6 +327,8 @@ def load(directory) -> Model:
         unsure_below=float(meta["unsure_below"]),
         meta=meta,
         tagger_path=str(directory / SLOTS_FILE),
+        vocabulary=[int(h) for h in meta.get("vocabulary_hashes", [])],
+        calibrator=gate.from_json(meta.get("calibrator")),
     )
 
 

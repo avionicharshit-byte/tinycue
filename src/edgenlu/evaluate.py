@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from .calibrate import (
     expected_calibration_error,
     reliability,
 )
-from .decode import decode, spans_from_tags
+from .decode import spans_from_tags
 from .model import Model
 from .schema import Example
 
@@ -32,32 +32,26 @@ class Answer:
     confidence: float
     intent_right: bool
     full_right: bool
+    signals: dict = field(default_factory=dict)
 
 
 def answer(model: Model, example: Example) -> Answer:
     """Run one sentence through the bundle."""
-    tokens = list(example.tokens)
-    probabilities = model.intent_probabilities(tokens)
-    best = int(np.argmax(probabilities))
-    command = model.classes[best]
-    intent_confidence = float(probabilities[best])
-
-    tags, slot_confidence = model.tag(tokens)
-    result = decode(tokens, tags, command, model.spec)
-
-    intent_right = command == example.command
-    full_right = intent_right and result.slots == dict(example.slots)
+    reading = model.read(example.tokens)
+    intent_right = reading.command == example.command
+    full_right = intent_right and reading.decoded.slots == dict(example.slots)
     return Answer(
         example=example,
-        command=command,
-        slots=result.slots,
-        missing=result.missing,
-        tags=tags,
-        intent_confidence=intent_confidence,
-        slot_confidence=slot_confidence,
-        confidence=model.confidence(intent_confidence, slot_confidence),
+        command=reading.command,
+        slots=reading.decoded.slots,
+        missing=reading.decoded.missing,
+        tags=reading.tags,
+        intent_confidence=reading.intent_probability,
+        slot_confidence=reading.slot_probability,
+        confidence=reading.confidence,
         intent_right=intent_right,
         full_right=full_right,
+        signals=reading.signals,
     )
 
 
@@ -81,6 +75,26 @@ def slot_scores(answers) -> tuple[float, float, float]:
     return precision, recall, f1
 
 
+def value_scores(answers) -> tuple[float, float, float]:
+    """Precision, recall and F1 over (slot name, value) pairs, not over spans.
+
+    A set written by somebody who never saw the commands file says things the file does
+    not list, so nobody can mark where a value is said. The value that came out is still
+    comparable against the value that was meant, and that is what a caller uses.
+    """
+    hits = predicted = gold = 0
+    for item in answers:
+        want = {(name, str(value)) for name, value in dict(item.example.slots).items()}
+        got = {(name, str(value)) for name, value in dict(item.slots).items()}
+        hits += len(want & got)
+        predicted += len(got)
+        gold += len(want)
+    precision = hits / predicted if predicted else 1.0
+    recall = hits / gold if gold else 1.0
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    return precision, recall, f1
+
+
 def report(model: Model, examples, cutoff: float | None = None) -> tuple[Report, list[Answer]]:
     """Every number the eval command prints, plus the per-sentence answers."""
     answers = run(model, examples)
@@ -93,7 +107,11 @@ def report(model: Model, examples, cutoff: float | None = None) -> tuple[Report,
 
     out.intent_accuracy = float(np.mean([a.intent_right for a in answers]))
     out.full_accuracy = float(correct.mean())
-    out.slot_precision, out.slot_recall, out.slot_f1 = slot_scores(answers)
+    out.spans_labelled = all(a.example.labelled for a in answers)
+    if out.spans_labelled:
+        out.slot_precision, out.slot_recall, out.slot_f1 = slot_scores(answers)
+    else:
+        out.slot_precision, out.slot_recall, out.slot_f1 = value_scores(answers)
     out.ece = expected_calibration_error(confidences, correct)
     out.buckets = reliability(confidences, correct)
     out.cutoff = (

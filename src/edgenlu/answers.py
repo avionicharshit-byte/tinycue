@@ -339,6 +339,43 @@ def load(paths, spec: Spec, register: bool = True) -> list[Example]:
     return out
 
 
+def load_answers(paths, spec: Spec) -> list[Example]:
+    """Read answer-first files without working out where each slot value is said.
+
+    `load` has to find the words behind every slot so it can write BIO tags, and it
+    refuses a sentence whose wording it cannot place. That is right for training, and
+    wrong for measuring: a test set written by somebody who has never seen the commands
+    file is full of wordings the file does not list, and throwing those sentences away
+    would quietly drop the hardest ones.
+
+    What comes back here carries the command and the canonical slot values only, with
+    every tag O and `labelled` off. Scoring it compares the answer against the answer,
+    which is what the caller of the device actually gets.
+    """
+    out: list[Example] = []
+    counters: dict[str, int] = {}
+    for path in paths:
+        for command_name, slots, text, _where in _rows(path, spec):
+            index = counters.get(command_name, 0)
+            counters[command_name] = index + 1
+            plain = strip_markup(text)
+            tokens = tokenize(plain)
+            if not tokens:
+                raise SpecError(f"{path}: a sentence is empty")
+            out.append(
+                Example(
+                    tokens=tokens,
+                    tags=[OUTSIDE] * len(tokens),
+                    command=command_name,
+                    slots=dict(slots),
+                    text=plain,
+                    frame=f"{command_name}#a{index}",
+                    labelled=False,
+                )
+            )
+    return out
+
+
 def apply(spec: Spec, examples) -> int:
     """Fold answer-first examples into a spec so they train like hand-written ones."""
     added = 0
