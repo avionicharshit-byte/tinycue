@@ -3,6 +3,13 @@
 Tags carry the slot TYPE. The command says which of its slot names uses that type, so the
 name only comes back here. A value that is not in the word list is kept as it was
 said, so a name nobody listed still arrives.
+
+Trimming
+--------
+A tagger often pulls one carrier word into a span, so "up karo" comes back where "up" was
+meant. When the whole span matches nothing, the span is retried shorter: first with
+trailing words dropped one at a time, then with leading words dropped one at a time. The
+first shorter span that matches wins. The C runtime does the same, in the same order.
 """
 
 from __future__ import annotations
@@ -74,6 +81,33 @@ def spans_from_tags(tokens, tags) -> list[tuple[str, int, int]]:
     return spans
 
 
+def span_value(tokens, start: int, end: int, slot_type):
+    """What a span is worth to a slot type, or None when the type does not know it."""
+    if slot_type.kind == NUMBER:
+        value = parse_number(tokens[start:end])
+        if value is None:
+            return None
+        if slot_type.min is not None and value < slot_type.min:
+            return None
+        if slot_type.max is not None and value > slot_type.max:
+            return None
+        return value
+    return slot_type.find_canonical(" ".join(tokens[start:end]))
+
+
+def trim_span(tokens, start: int, end: int, slot_type):
+    """The first matching span, dropping trailing words first, then leading ones."""
+    for stop in range(end, start, -1):
+        value = span_value(tokens, start, stop, slot_type)
+        if value is not None:
+            return start, stop, value
+    for begin in range(start + 1, end):
+        value = span_value(tokens, begin, end, slot_type)
+        if value is not None:
+            return begin, end, value
+    return None
+
+
 def decode(tokens, tags, command_name: str, spec: Spec) -> Decoded:
     """Read one tagged sentence into a command call."""
     result = Decoded(command=command_name)
@@ -99,22 +133,19 @@ def decode(tokens, tags, command_name: str, spec: Spec) -> Decoded:
             result.stray.append(type_name)
             continue
 
-        if slot_type.kind == NUMBER:
-            value = parse_number(tokens[start:end])
-            if value is None:
-                result.stray.append(type_name)
-                continue
-            if slot_type.min is not None and value < slot_type.min:
-                result.stray.append(type_name)
-                continue
-            if slot_type.max is not None and value > slot_type.max:
-                result.stray.append(type_name)
-                continue
+        match = trim_span(tokens, start, end, slot_type)
+        if match is not None:
+            start, end, value = match
+            surface = " ".join(tokens[start:end])
             known = True
+        elif slot_type.kind == NUMBER:
+            # A number slot has no open vocabulary: words that read as no number at all
+            # are a tagger slip, not a value.
+            result.stray.append(type_name)
+            continue
         else:
-            canonical = slot_type.find_canonical(surface)
-            known = canonical is not None
-            value = canonical if known else surface
+            value = surface
+            known = False
 
         result.found.append(
             Slot(

@@ -89,6 +89,39 @@ def test_a_number_outside_the_range_is_dropped(example_spec):
     assert result.stray == ["minutes"]
 
 
+def test_a_trailing_carrier_word_is_trimmed_off_the_span(example_spec):
+    """The tagger often pulls one word too many in. 'up karo' still means up."""
+    tokens = tokenize("fan up karo")
+    tags = ["O", "B-direction", "I-direction"]
+    result = decode(tokens, tags, "set_fan", example_spec)
+    assert result.slots == {"speed": "up"}
+    assert [s.surface for s in result.found] == ["up"]
+    assert [s.known for s in result.found] == [True]
+
+
+def test_a_leading_word_is_trimmed_when_trailing_words_do_not_help(example_spec):
+    tokens = tokenize("the kitchen light on")
+    tags = ["B-room", "I-room", "O", "B-state"]
+    result = decode(tokens, tags, "set_light", example_spec)
+    assert result.slots == {"room": "kitchen", "state": "on"}
+
+
+def test_trimming_works_on_a_number_slot_too(example_spec):
+    tokens = tokenize("timer 45 minutes")
+    tags = ["O", "B-minutes", "I-minutes"]
+    result = decode(tokens, tags, "set_timer", example_spec)
+    assert result.slots == {"minutes": 45}
+
+
+def test_trimming_never_hands_back_an_empty_span(example_spec):
+    """Nothing in the span matches, so the whole span is passed on as it was said."""
+    tokens = tokenize("turn on the garage door")
+    tags = ["O", "B-state", "O", "B-room", "I-room"]
+    result = decode(tokens, tags, "set_light", example_spec)
+    assert result.slots == {"state": "on", "room": "garage door"}
+    assert [s.known for s in result.found] == [True, False]
+
+
 def test_a_word_nobody_listed_arrives_as_it_was_said(example_spec):
     """An open vocabulary value: the room is not in the list, so we pass the words on."""
     tokens = tokenize("turn on the garage light")
