@@ -6,8 +6,10 @@ examples into training data for a tiny intent model and a word tagger. The goal 
 a model file under 1 MB, small enough for an ESP32 or a Raspberry Pi, with English and Hinglish
 support.
 
-Status: milestone M1. The commands file parser, the example generator, training, calibration and
-the command line all work. The C export is not written yet. See [PLAN.md](PLAN.md) for the plan.
+Status: milestone M3. The commands file parser, the example generator, training, calibration, the
+command line, the C99 device runtime and an ESP32 demo all work. The C runtime is proved against
+Python on 842 sentences, and the demo runs on a real ESP32 with a round display, offline, in about
+4.4 milliseconds a sentence. See [PLAN.md](PLAN.md) for what is left.
 
 ![How edge-nlu works](diagrams/edge-nlu-flow.png)
 
@@ -73,6 +75,57 @@ set_light(state=on, room=bedroom) confidence=0.98
 `edgenlu generate` writes the training examples on their own, one JSON object per line with
 `tokens`, `tags`, `command` and `slots`.
 
+## On a device
+
+Export the bundle as one flat blob plus C source, then build the runtime:
+
+```sh
+.venv/bin/edgenlu export out/model -o out/device
+make -C runtime
+echo "fan tez karo" | runtime/enlu_cli out/device/model.bin
+```
+
+```
+{"text":"fan tez karo","command":"set_fan","slots":{"speed":"up"},"missing":[],
+ "confidence":0.995,"intent":0.999,"slot":0.986,"unsure":false,"micros":4.2}
+```
+
+`out/device/` holds `model.bin`, and `model_data.c` and `model_data.h`, which are the same bytes
+as a `const unsigned char[]` for flashing. The format is written out in
+[docs/model-format.md](docs/model-format.md).
+
+The runtime is two files, `runtime/edgenlu.h` and `runtime/edgenlu.c`: portable C99, no malloc
+after init, no file reading, nothing beyond libc and libm. The caller hands it a scratch buffer and
+it reads the model where it lies, so on a microcontroller the weights never leave flash. The API is
+two calls:
+
+```c
+int enlu_init(enlu_model *model, const uint8_t *blob, size_t len);
+int enlu_parse(const enlu_model *model, const char *text, enlu_result *out,
+               void *scratch, size_t scratch_len);
+```
+
+`enlu_result` carries the command name, the slots with their canonical values or numbers, any
+required slots that were left out, the confidence and its two halves, and an `unsure` flag. The
+best guess is filled in even when the answer is unsure.
+
+## The ESP32 demo
+
+[demo/esp32_round](demo/esp32_round) runs the smart home model on a classic ESP32 with a 1.28 inch
+round GC9A01 display. It reads a sentence from USB serial, answers with one JSON line, and draws
+the command on the screen with a confidence ring around the rim. No Wi-Fi.
+
+```sh
+make model          # train and export
+make demo-flash     # copy the runtime in, build and upload
+.venv/bin/python demo/send.py "turn on the bedroom light"
+```
+
+What it measured on the real board is in
+[demo/esp32_round/board-results.md](demo/esp32_round/board-results.md): 540,632 bytes of flash
+(41% of the app partition), 40,828 bytes of static RAM, 310,552 bytes of heap left, and 2.5 to
+6.5 milliseconds a sentence. The screen drawing has not been checked by eye.
+
 ## What it does today
 
 - **Tags carry the slot type, not the slot name.** Two commands that both take a `direction` share
@@ -100,25 +153,37 @@ Training takes about 5 seconds per model. Nothing here is trained on the `eval/`
 | commands | 4 plus `none` | 6 plus `none` |
 | hand-written examples | 56 | 72 |
 | bundle size | 305 KB | 376 KB |
-| training time | 4.2 s | 4.6 s |
+| device blob size | 205 KB | 263 KB |
+| training time | 4.7 s | 4.6 s |
+| desktop parse time, mean | 7.5 us | 4.4 us |
 | **generated test split** | 1018 sentences | 1627 sentences |
 | intent accuracy | 92.8% | 81.7% |
 | slot F1 | 98.2% | 97.6% |
-| full command accuracy | 91.5% | 80.9% |
-| ECE | 0.069 | 0.100 |
-| sent to unsure | 46.0% | 64.4% |
-| wrong answers caught | 98.9% | 98.4% |
-| accepted answers right | 99.8% | 99.1% |
+| full command accuracy | 92.7% | 80.9% |
+| ECE | 0.033 | 0.100 |
+| sent to unsure | 31.9% | 64.4% |
+| wrong answers caught | 100.0% | 98.4% |
+| accepted answers right | 100.0% | 99.1% |
 | **hand-written held-out set** | 144 sentences | 98 sentences |
 | intent accuracy | 77.1% | 42.9% |
 | slot F1 | 88.8% | 78.9% |
-| full command accuracy | 74.3% | 39.8% |
-| ECE | 0.089 | 0.166 |
-| sent to unsure | 63.9% | 87.8% |
-| wrong answers caught | 97.3% | 94.9% |
-| accepted answers right | 98.1% | 75.0% |
+| full command accuracy | 75.7% | 39.8% |
+| ECE | 0.090 | 0.166 |
+| sent to unsure | 48.6% | 87.8% |
+| wrong answers caught | 85.7% | 94.9% |
+| accepted answers right | 93.2% | 75.0% |
 
-The chosen cut-off was 0.920 for the smart home model and 0.852 for the robot model.
+The chosen cut-off was 0.903 for the smart home model and 0.852 for the robot model. The desktop
+parse time is the C runtime over 842 sentences on an M1 MacBook Air, timed around `enlu_parse`
+alone.
+
+The smart home numbers moved when span trimming went in. A tagged span that matches no listed
+value is now retried a word shorter, so "fan up karo" gives `speed=up` instead of `speed=up karo`.
+Full command accuracy on the generated split went from 91.5% to 92.7% and on the held-out set from
+74.3% to 75.7%. The cut-off then refitted lower, from 0.920 to 0.903, because on dev it now reaches
+100% accepted accuracy sooner. That is worse on the held-out set, where the fallback used to catch
+97.3% of the wrong answers and now catches 85.7%. The cut-off is chosen on generated dev data and
+the held-out file is harder than that data, which is the gap to close.
 
 Read those two blocks together. On phrasings that are variations of what you wrote, the tool is
 good. On wording it has never seen, it is not, and the honest part is that it knows: on the smart
@@ -131,13 +196,28 @@ synonyms ("seize", "unclamp", "terminate motion") that appear nowhere in the com
 with no word embeddings cannot reach those. The fix is to write more example sentences, which is
 the same fix as for every other gap.
 
+## Proving the C runtime
+
+`tests/test_c_parity.py` trains both example specs, exports both blobs, builds the C command line
+tool, and runs every sentence of both held-out files plus 300 generated sentences per spec through
+Python and through C: 842 sentences. It asserts the same command, the same slot values, the same
+missing slots, the same unsure flag and the confidence to within 1e-3.
+
+It runs Python twice. Once with the float32 weights it trained, and once with those weights
+rounded to the float16 the blob carries, which is what the C side actually reads. Against the
+float16 run there were **0 mismatches**, with the worst confidence gap 7.8e-07. Against the
+float32 run **no decision changed** on any of the 842 sentences, and the worst confidence gap was
+2.3e-04. int8 weights with a per class scale were measured too: no decision changed there either,
+but the confidence moved by up to 8.1e-03, over the 1e-3 bar, so float16 it is.
+
 ## Tests
 
 ```sh
 .venv/bin/pytest -q
 ```
 
-221 tests, about 4 seconds, including a full train on a small dataset.
+237 tests, about 8 seconds, including a full train on a small dataset and the C parity run. The
+parity tests build the runtime with `cc` and skip cleanly if no C compiler is installed.
 
 ## Licence
 

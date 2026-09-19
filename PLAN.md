@@ -60,20 +60,30 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
 - [x] **M1**: Python train and eval command line tool, with a calibration report: reliability
   buckets, the chosen cut-off, what share of inputs go to the fallback and what share of wrong
   answers that catches. Measured numbers are in [README.md](README.md).
-- [ ] **M2**: the C99 runtime, proved bit-exact against the Python model on a desktop.
-  The feature definition it has to reproduce is written out in `src/edgenlu/features.py`.
-- [ ] **M3**: ESP32 demo with the round display and the "did you mean" screen, with measured flash,
-  RAM and latency.
+- [x] **M2**: the C99 runtime, proved against the Python model on a desktop. 842 sentences, every
+  one of both held-out files plus 300 generated per spec, gave 0 mismatches on command, slot
+  values, missing slots and unsure flag, with the worst confidence gap 7.8e-07 against Python
+  reading the same float16 weights and 2.3e-04 against Python's own float32. Mean 7.5 microseconds
+  a sentence on an M1 MacBook Air. Blob 205 KB for the smart home model, 263 KB for the robot one.
+  The format is in `docs/model-format.md`.
+- [x] **M3**: ESP32 demo with the round display and the "did you mean" screen. On a classic ESP32,
+  540,632 bytes of flash (41% of the app partition), 40,828 bytes of static RAM, 310,552 bytes of
+  heap left, and 2,537 to 6,534 microseconds a sentence, mean 4,376. All 31 board sentences matched
+  the desktop C tool and Python. Numbers in `demo/esp32_round/board-results.md`. The screen drawing
+  is untested by eye.
 - [ ] **M4**: README, a Hinglish example pack, and the first release.
 
 ## Numbers to aim for
 
-- Model file under 1 MB. **Met**: 305 KB for the smart home example, 376 KB for the robot one.
-- Under 10 ms per command on a classic ESP32. Not measured yet, that is M3.
+- Model file under 1 MB. **Met**: the device blob is 205 KB for the smart home example and 263 KB
+  for the robot one. The Python bundle, which keeps float32 weights, is 305 KB and 376 KB.
+- Under 10 ms per command on a classic ESP32. **Met**: 2.5 to 6.5 ms over 31 sentences, mean
+  4.4 ms, timed around the parse alone on the real board.
 - Over 95% intent accuracy on held-out phrasing the model has not seen. **Not met**: 77% on the
   smart home held-out file and 43% on the robot one.
-- The unsure path catches most of the answers that would have been wrong. **Met**: 97% on the
-  smart home held-out file and 95% on the robot one.
+- The unsure path catches most of the answers that would have been wrong. **Half met**: 95% on the
+  robot held-out file, but only 86% on the smart home one since the cut-off refitted to 0.903. The
+  cut-off is chosen on generated dev data, and the held-out file is harder than that data.
 
 ## Open questions
 
@@ -85,6 +95,9 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   so the CRF has to tag it from context alone. Decoding passes the words straight through when the
   value is not listed, but how often the tagger finds them, and what confidence to report, is
   still unmeasured.
+- How to pick the cut-off on data that looks like the held-out file rather than the generated dev
+  split. Today the cut-off is fitted on generated sentences, and it is too generous for wording the
+  model has never seen.
 - How to close the gap on unseen wording. M1 measured it: on hand-written held-out phrasings the
   smart home model gets 77% of intents right and the robot model 43%, because hashed n-grams carry
   no idea that "seize" and "grab" are related. More example sentences is the only lever we have
