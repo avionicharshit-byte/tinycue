@@ -10,6 +10,7 @@ from pathlib import Path
 
 from . import evaluate, model as bundle
 from .decode import decode
+from .features import DEFAULT_BUCKETS
 from .generator import generate
 from .parser import load_examples_file, load_spec, tokenize
 from .schema import NUMBER, SpecError
@@ -38,6 +39,12 @@ def main(argv: list[str] | None = None) -> int:
     tr.add_argument("--seed", type=int, default=0, help="random seed (default 0)")
     tr.add_argument("-o", "--out", default="out/model", help="where to write the bundle")
     tr.add_argument(
+        "--table-size",
+        type=int,
+        default=None,
+        help="hash table buckets, a power of two (default 16384)",
+    )
+    tr.add_argument(
         "--splits",
         default=None,
         help="where to write the dev and test splits (default: a 'splits' folder next to "
@@ -55,6 +62,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     ev.add_argument("--errors", type=int, default=10, help="how many mistakes to list")
 
+    ex = sub.add_parser("export", help="write a bundle out for the C runtime")
+    ex.add_argument("model", help="path to the model bundle")
+    ex.add_argument("-o", "--out", default="out/device", help="where to write the blob")
+
     ps = sub.add_parser("parse", help="read one sentence with a trained bundle")
     ps.add_argument("model", help="path to the model bundle")
     ps.add_argument("text", nargs="+", help="the sentence to read")
@@ -69,6 +80,8 @@ def main(argv: list[str] | None = None) -> int:
             return _train(args)
         if args.command == "eval":
             return _eval(args)
+        if args.command == "export":
+            return _export(args)
         return _parse(args)
     except SpecError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -129,7 +142,11 @@ def _generate(args) -> int:
 def _train(args) -> int:
     spec = load_spec(args.file)
     out_dir = Path(args.out)
-    result = train(spec, out_dir, n_per_command=args.n, seed=args.seed)
+    table_size = args.table_size if args.table_size else DEFAULT_BUCKETS
+    if table_size < 2 or table_size & (table_size - 1):
+        print("error: --table-size must be a power of two", file=sys.stderr)
+        return 1
+    result = train(spec, out_dir, n_per_command=args.n, seed=args.seed, table_size=table_size)
 
     splits = Path(args.splits) if args.splits else out_dir.parent / "splits"
     write_jsonl(result.split.dev, splits / "dev.jsonl")
@@ -192,6 +209,17 @@ def _eval(args) -> int:
             sentence = " ".join(item.example.tokens)
             print(f"  [{item.confidence:.2f}] {sentence}")
             print(f"        {evaluate.why(item)}")
+    return 0
+
+
+def _export(args) -> int:
+    from .export import export
+
+    result = export(args.model, args.out)
+    print(f"wrote {result['path']}")
+    print(f"  {result['bytes'] / 1024:.1f} KB, {result['classes']} classes, "
+          f"{result['labels']} tags, {result['table_size']} buckets")
+    print(f"  plus model_data.h and model_data.c in {args.out}")
     return 0
 
 
