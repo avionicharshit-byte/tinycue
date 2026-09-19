@@ -77,6 +77,37 @@ def cli(tmp_path_factory):
 
 
 @pytest.fixture(scope="module")
+def cli_fast(tmp_path_factory):
+    """The same runtime built with the single precision exponentials the device uses."""
+    found = compiler()
+    if found is None:
+        pytest.skip("no C compiler on this machine")
+    build = tmp_path_factory.mktemp("runtime_fast")
+    result = subprocess.run(
+        [
+            found,
+            "-O2",
+            "-Wall",
+            "-Wextra",
+            "-std=c99",
+            "-pedantic",
+            "-DENLU_FAST_EXP",
+            "-o",
+            str(build / "enlu_cli"),
+            str(RUNTIME / "cli.c"),
+            str(RUNTIME / "edgenlu.c"),
+            "-lm",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        pytest.fail("the fast build did not build:\n" + result.stderr)
+    assert result.stderr.strip() == "", result.stderr
+    return build / "enlu_cli"
+
+
+@pytest.fixture(scope="module")
 def models(tmp_path_factory):
     """One trained and exported bundle per example spec."""
     out = {}
@@ -201,6 +232,21 @@ def test_c_matches_python(cli, models, name, capsys):
     assert not mismatches, "\n".join(mismatches[:20])
     assert float32_differences == 0
     assert worst_float32 < TOLERANCE
+
+
+@pytest.mark.parametrize("name", [name for name, _, _ in SPECS])
+def test_the_device_build_answers_the_same(cli, cli_fast, models, name):
+    """ENLU_FAST_EXP is what the ESP32 runs. It must not change a single answer."""
+    entry = models[name]
+    texts = sentences(entry)
+    slow = run_c(cli, entry["blob"], texts)
+    quick = run_c(cli_fast, entry["blob"], texts)
+    for a, b in zip(slow, quick):
+        assert a["command"] == b["command"]
+        assert a["slots"] == b["slots"]
+        assert a["missing"] == b["missing"]
+        assert a["unsure"] == b["unsure"]
+        assert abs(a["confidence"] - b["confidence"]) < 1e-5
 
 
 def test_the_blob_starts_with_its_magic(models):
