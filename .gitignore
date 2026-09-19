@@ -21,3 +21,7 @@ out/
 
 # macOS
 .DS_Store
+
+# C build output
+runtime/*.o
+runtime/enlu_cli
