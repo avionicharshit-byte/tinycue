@@ -9,7 +9,10 @@ import pytest
 from edgenlu.parser import load_spec
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-EXAMPLE_FILE = REPO_ROOT / "commands.example.yaml"
+EXAMPLE_FILE = REPO_ROOT / "examples/smart_home.yaml"
+ROBOT_FILE = REPO_ROOT / "examples/robot.yaml"
+HELDOUT_FILE = REPO_ROOT / "eval/heldout_smart_home.yaml"
+PACKAGE_DIR = REPO_ROOT / "src/edgenlu"
 
 SMALL_SPEC = """
 language: [en, hinglish]
@@ -68,8 +71,13 @@ def example_spec():
     return load_spec(EXAMPLE_FILE)
 
 
+@pytest.fixture
+def robot_spec():
+    return load_spec(ROBOT_FILE)
+
+
 def spans_from_tags(tokens, tags):
-    """Rebuild (slot name, surface text) pairs from BIO tags."""
+    """Rebuild (slot type, surface text) pairs from BIO tags."""
     spans = []
     current_slot = None
     current_tokens: list[str] = []
