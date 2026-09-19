@@ -1,0 +1,120 @@
+# edge-nlu example commands file: a small smart home remote.
+#
+# This one file is the whole input. You write it by hand, run the trainer, and get back
+# C code plus a model file under 1 MB.
+#
+# Three parts:
+#   slots:    the kinds of value a command can carry, and the words people use for them
+#   commands: what the device can do, with example sentences
+#   fallback: what happens when the model is not sure
+#
+# Markup in examples: [spoken words](slot_name)
+#   "turn [on](state) the [bedroom](room) light"  ->  state=on, room=bedroom
+#
+# Quoting: wrap every example in quotes. YAML reads a line starting with "[" as a list,
+# so "[bedroom](room) ki light band karo" breaks without them. Quoting all of them keeps
+# it consistent and safe to copy.
+
+# Languages the examples are written in. "hinglish" means Hindi typed in Latin letters,
+# usually mixed with English. You can use both in the same sentence.
+language: [en, hinglish]
+
+slots:
+
+  # A value list slot. Each entry has one canonical value (what your code receives) and
+  # the surface forms people actually say. Put the most common form first.
+  room:
+    values:
+      bedroom: [bedroom, bed room, sone ka kamra, kamre]
+      kitchen: [kitchen, rasoi, kitchen ka]
+      living_room: [living room, hall, drawing room, baithak]
+      bathroom: [bathroom, washroom, gusalkhana]
+
+  state:
+    values:
+      "on": ["on", chalu, jala do, jalao, on kar do]
+      "off": ["off", band, bujha do, band kar do, off kar do]
+
+  # Used for fan speed and anything else that moves up or down.
+  direction:
+    values:
+      up: [up, faster, tez, tez karo, badha do, increase]
+      down: [down, slower, dheere, dheere karo, kam karo, decrease]
+
+  # A number slot. No value list. The model understands digits, English number words and
+  # Hindi number words, so "10", "ten" and "das" all arrive as 10.
+  minutes:
+    type: number
+    # Optional sanity range. Anything outside it is treated as not a match.
+    min: 1
+    max: 180
+
+  what:
+    values:
+      temperature: [temperature, temp, garmi, kitna garam]
+      time: [time, samay, kya baja]
+      humidity: [humidity, nami, humidity level]
+
+commands:
+
+  # Turn a light on or off in a room.
+  - name: set_light
+    slots: [room, state]
+    examples:
+      - "turn [on](state) the [bedroom](room) light"
+      - "switch the [kitchen](room) light [off](state)"
+      - "[bedroom](room) ki light [band](state) karo"
+      - "[rasoi](room) mein light [jala do](state)"
+      - "please put the [living room](room) lights [on](state)"
+      - "[hall](room) ki light [chalu](state) kar do please"
+
+  # Fan control. The room is optional: with no room, the device uses the one it is in.
+  - name: set_fan
+    slots:
+      - name: room
+        required: false
+      - name: speed
+        type: direction
+    examples:
+      - "make the [bedroom](room) fan [faster](speed)"
+      - "fan speed [down](speed)"
+      - "[kamre](room) ka fan [tez](speed) karo"
+      - "[dheere](speed) karo fan"
+      - "turn the [hall](room) fan speed [up](speed)"
+      - "fan ko thoda [kam karo](speed)"
+
+  # Set a countdown timer.
+  - name: set_timer
+    slots: [minutes]
+    examples:
+      - "set a timer for [ten](minutes) minutes"
+      - "[5](minutes) minute ka timer laga do"
+      - "remind me in [twenty](minutes) minutes"
+      - "[das](minutes) minute baad alarm"
+      - "timer [45](minutes) minutes"
+      - "[bees](minutes) minute ka timer set karo"
+
+  # Read something out or show it on the screen.
+  - name: show
+    slots: [what]
+    examples:
+      - "what is the [temperature](what)"
+      - "show me the [time](what)"
+      - "[nami](what) kitni hai"
+      - "abhi [kya baja](what) hai"
+      - "tell me the [humidity](what) in here"
+      - "[garmi](what) kitni hai bahar"
+
+fallback:
+  # The confidence below which the answer becomes "unsure" instead of an action.
+  # "auto" means the trainer picks it from held-out data and prints what it chose.
+  # You can also write a number between 0 and 1 to pin it yourself.
+  unsure_below: auto
+
+  # When true, sentences that are not any of the commands above map to "no command"
+  # rather than being forced into the closest one. Keep this on.
+  none_command: true
+
+  # What the device does when the answer is unsure. "ask" shows a "did you mean ...?"
+  # prompt; "cloud" hands the sentence to a bigger model if there is a network.
+  on_unsure: ask
