@@ -1,0 +1,38 @@
+# Syntax colouring for EdgeNLU in the Arduino IDE. Fields are separated by one tab.
+
+# Datatypes
+enlu_model	KEYWORD1
+enlu_result	KEYWORD1
+enlu_slot	KEYWORD1
+
+# Functions
+enlu_init	KEYWORD2
+enlu_parse	KEYWORD2
+enlu_scratch_size	KEYWORD2
+enlu_cutoff	KEYWORD2
+enlu_error	KEYWORD2
+
+# Fields of enlu_result and enlu_slot
+command	KEYWORD2
+confidence	KEYWORD2
+unsure	KEYWORD2
+is_none	KEYWORD2
+slots	KEYWORD2
+slot_count	KEYWORD2
+missing	KEYWORD2
+missing_count	KEYWORD2
+unknown_count	KEYWORD2
+unknown_share	KEYWORD2
+is_number	KEYWORD2
+known	KEYWORD2
+
+# Constants
+ENLU_OK	LITERAL1
+ENLU_BAD_BLOB	LITERAL1
+ENLU_BAD_ARGUMENT	LITERAL1
+ENLU_SMALL_SCRATCH	LITERAL1
+ENLU_EMPTY_INPUT	LITERAL1
+ENLU_TOO_LONG	LITERAL1
+ENLU_MAX_TOKENS	LITERAL1
+ENLU_MAX_TEXT	LITERAL1
+ENLU_MAX_SLOTS	LITERAL1

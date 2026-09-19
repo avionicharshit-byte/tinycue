@@ -7,6 +7,9 @@ DEV ?= examples/smart_home.dev.yaml
 MODEL ?= out/model
 DEVICE ?= out/device
 SKETCH ?= demo/esp32_round
+ARDUINO_LIB ?= arduino/EdgeNLU
+ARDUINO_EXAMPLE ?= $(ARDUINO_LIB)/examples/SerialCommands
+STARTER ?= out/arduino-starter
 NXP_DEMO ?= demo/nxp_mcxn236
 VOICE_FW ?= demo/voice/nxp_mic_stream
 FQBN ?= esp32:esp32:esp32
@@ -40,6 +43,28 @@ demo-build: demo-sync
 
 demo-flash: demo-build
 	arduino-cli upload --fqbn $(FQBN) -p $(PORT) $(SKETCH)
+
+# --------------------------------------------------------------- Arduino library
+# The library at arduino/EdgeNLU holds committed copies of the runtime, because somebody
+# who downloads a ZIP of this repo has to get working files. tests/test_arduino_library.py
+# fails if the copies ever drift, and this target is how you fix that.
+arduino-sync:
+	cp runtime/edgenlu.c runtime/edgenlu.h $(ARDUINO_LIB)/src/
+	@echo "synced runtime into $(ARDUINO_LIB)/src"
+
+# Rebuild the model the example sketch carries: the starter device `edgenlu init` writes,
+# with a small hash table, because the example is for reading and not for accuracy.
+arduino-example-model:
+	rm -rf $(STARTER)
+	$(EDGENLU) init coffee -d $(STARTER)
+	$(EDGENLU) train $(STARTER)/coffee.yaml --extra $(STARTER)/coffee.extra.yaml \
+	    --dev $(STARTER)/coffee.dev.yaml --table-size 4096 --seed 0 -o $(STARTER)/model
+	$(EDGENLU) export $(STARTER)/model -o $(STARTER)/device
+	cp $(STARTER)/device/model_data.c $(STARTER)/device/model_data.h $(ARDUINO_EXAMPLE)/
+	@echo "refreshed the example model in $(ARDUINO_EXAMPLE)"
+
+arduino-build:
+	arduino-cli compile --fqbn $(FQBN) --library $(ARDUINO_LIB) $(ARDUINO_EXAMPLE)
 
 # The FRDM-MCXN236 demo has its own makefile and copies the runtime in itself.
 nxp-build:
@@ -77,4 +102,5 @@ clean:
 	rm -f $(SKETCH)/edgenlu.c $(SKETCH)/edgenlu.h $(SKETCH)/model_data.c $(SKETCH)/model_data.h
 
 .PHONY: cli model doctor demo-sync demo-build demo-flash nxp-build nxp-flash \
+        arduino-sync arduino-example-model arduino-build \
         voice-model voice-build voice-flash test clean
