@@ -1,0 +1,12 @@
+{
+  "name": "edge-nlu",
+  "version": "0.1.0",
+  "description": "Agent skill for building an offline command parser that fits on a microcontroller.",
+  "author": {
+    "name": "Harshit Dev",
+    "url": "https://github.com/avionicharshit-byte"
+  },
+  "homepage": "https://github.com/avionicharshit-byte/edge-nlu",
+  "repository": "https://github.com/avionicharshit-byte/edge-nlu",
+  "license": "Apache-2.0"
+}
