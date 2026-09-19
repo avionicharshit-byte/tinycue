@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import re
 
-from conftest import PACKAGE_DIR
+from conftest import PACKAGE_DIR, REPO_ROOT
+
+RUNTIME_DIR = REPO_ROOT / "runtime"
 
 # Words from the two example domains. Neither set may appear in the package source.
 DOMAIN_WORDS = [
@@ -54,6 +56,19 @@ def test_the_language_files_carry_no_domain_words():
         text = path.read_text(encoding="utf-8").lower()
         for word in DOMAIN_WORDS:
             assert not re.search(rf"\b{re.escape(word)}\b", text), f"{path.name}: {word}"
+
+
+def test_no_domain_words_in_the_c_runtime():
+    """Same rule for the device side. Demo folders are where a domain is allowed."""
+    files = sorted(RUNTIME_DIR.glob("*.c")) + sorted(RUNTIME_DIR.glob("*.h"))
+    assert len(files) >= 3
+    found = []
+    for path in files:
+        text = path.read_text(encoding="utf-8").lower()
+        for word in DOMAIN_WORDS:
+            if re.search(rf"\b{re.escape(word)}\b", text):
+                found.append(f"{path.name}: {word}")
+    assert not found, "domain words in the runtime: " + ", ".join(found)
 
 
 def test_the_guard_would_actually_catch_something(tmp_path):
