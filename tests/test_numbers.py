@@ -91,11 +91,41 @@ def test_teis_and_tees_are_different():
     assert parse_number(["tees"]) == 30
 
 
-def test_hindi_covers_zero_to_sixty():
-    for value in range(0, 61):
+def test_hindi_covers_zero_to_one_eighty():
+    for value in range(0, 181):
         word = hindi_words(value)
         assert word is not None, f"no Hindi word for {value}"
-        assert parse_number([word]) == value
+        assert parse_number(word.split()) == value
+
+
+@pytest.mark.parametrize(
+    "text,value",
+    [
+        ("ikasath", 61),
+        ("sattar", 70),
+        ("pachhattar", 75),
+        ("assi", 80),
+        ("nabbe", 90),
+        ("ninyanave", 99),
+        ("ek sau", 100),
+        ("ek sau bees", 120),
+        ("sau bees", 120),
+        ("ek sau assi", 180),
+    ],
+)
+def test_composed_hindi_numbers(text, value):
+    assert parse_number(text.split()) == value
+
+
+def test_hindi_spellings_never_collide():
+    from edgenlu.numbers import ENGLISH_NUMBER_WORDS, HINDI_SPELLINGS
+
+    seen = {}
+    for value, words in HINDI_SPELLINGS.items():
+        for word in words:
+            assert word not in seen, f"{word} means both {seen.get(word)} and {value}"
+            assert word not in ENGLISH_NUMBER_WORDS, word
+            seen[word] = value
 
 
 def test_english_round_trip():
@@ -112,7 +142,8 @@ def test_render_styles():
     assert render_number(25, DIGITS) == "25"
     assert render_number(25, ENGLISH) == "twenty five"
     assert render_number(25, HINDI) == "pachees"
-    assert render_number(175, HINDI) is None
+    assert render_number(175, HINDI) == "ek sau pachhattar"
+    assert render_number(200, HINDI) is None
 
 
 def test_unknown_style():

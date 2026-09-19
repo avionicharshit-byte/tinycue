@@ -58,8 +58,8 @@ ENGLISH_NUMBER_WORDS["hundred"] = 100
 # Spellings people type by habit.
 ENGLISH_NUMBER_WORDS["fourty"] = 40
 
-# Hindi in Latin letters, 0 to 60 plus 100. The first spelling is the one we write out,
-# the rest are variants people type.
+# Hindi in Latin letters, 0 to 99 plus 100. The first spelling is the one we write out,
+# the rest are variants people type. Values above 100 are composed: "ek sau bees" is 120.
 HINDI_SPELLINGS: dict[int, list[str]] = {
     0: ["shunya", "sunya"],
     1: ["ek", "eak"],
@@ -124,6 +124,45 @@ HINDI_SPELLINGS: dict[int, list[str]] = {
     58: ["atthavan", "athavan"],
     59: ["unsath", "unnsath"],
     60: ["saath", "sath"],
+    61: ["ikasath", "ekasath"],
+    62: ["basath", "baasath"],
+    63: ["tirsath", "tresath"],
+    64: ["chausath", "chaunsath"],
+    65: ["painsath", "pensath"],
+    66: ["chhiyasath", "chiyasath"],
+    67: ["sarsath", "sadsath"],
+    68: ["arsath", "adsath"],
+    69: ["unhattar", "unhatar"],
+    70: ["sattar", "satar"],
+    71: ["ikhattar", "ikahattar"],
+    72: ["bahattar", "bahatar"],
+    73: ["tihattar", "tehattar"],
+    74: ["chauhattar", "chuhattar"],
+    75: ["pachhattar", "pichhattar"],
+    76: ["chhihattar", "chihattar"],
+    77: ["sathattar", "satattar"],
+    78: ["athhattar", "adhattar"],
+    79: ["unasi", "unnasi"],
+    80: ["assi", "asi"],
+    81: ["ikyasi", "ikasi"],
+    82: ["bayasi", "byasi"],
+    83: ["tirasi", "terasi"],
+    84: ["chaurasi", "chourasi"],
+    85: ["pachasi", "pichasi"],
+    86: ["chhiyasi", "chiyasi"],
+    87: ["sattasi", "satasi"],
+    88: ["atthasi", "athasi"],
+    89: ["nawasi", "navasi"],
+    90: ["nabbe", "nabbey"],
+    91: ["ikyanave", "ikanave"],
+    92: ["banave", "byanave"],
+    93: ["tiranave", "teranave"],
+    94: ["chauranave", "chouranave"],
+    95: ["pichanave", "pachanave"],
+    96: ["chhiyanave", "chiyanave"],
+    97: ["sattanave", "satanave"],
+    98: ["atthanave", "athanave"],
+    99: ["ninyanave", "ninanave"],
     100: ["sau", "sao"],
 }
 
@@ -179,11 +218,17 @@ def english_words(value: int) -> str | None:
 
 
 def hindi_words(value: int) -> str | None:
-    """The Hindi spelling of a value, or None when the table does not have it."""
+    """The Hindi spelling of a value, or None when we do not spell it out.
+
+    0 to 100 come straight from the table. 101 to 199 are composed, so 120 is "ek sau bees".
+    """
     spellings = HINDI_SPELLINGS.get(value)
-    if not spellings:
-        return None
-    return spellings[0]
+    if spellings:
+        return spellings[0]
+    if 101 <= value <= 199:
+        rest = HINDI_SPELLINGS[value - 100][0]
+        return f"ek sau {rest}"
+    return None
 
 
 def render_number(value: int, style: str) -> str | None:
