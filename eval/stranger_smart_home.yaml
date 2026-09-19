@@ -1,0 +1,223 @@
+# stranger test set for examples/smart_home.yaml
+# written blind: only the slot values and the command names were looked at,
+# never the training sentences. six imagined speakers, one shared house.
+
+- answer: set_light(room=kitchen, state=on)
+  say:
+    - turn on the kitchen light
+    - could you please switch on the light in the kitchen
+    - um yeah so turn the kitchen lights on for me i cant see the stove
+- answer: set_light(room=kitchen, state=off)
+  say:
+    - kitchen light off
+    - rasoi ki batti band kar do
+    - would you mind switching the kitchen light off before dinner
+- answer: set_light(room=kitchen, state=on)
+  say:
+    - kitchen ki light on kar do
+- answer: set_light(room=bedroom, state=on)
+  say:
+    - bedroom light on
+    - sone ka kamra ki light jala do
+    - can you turn the bedroom lamp on i cannot find my charger
+- answer: set_light(room=bedroom, state=off)
+  say:
+    - switch off the bedroom light
+    - bedroom ki batti off kar do
+    - plz turn off the bedroom lights im sleepy
+    - kill the bedroom light
+- answer: set_light(room=living_room, state=on)
+  say:
+    - turn the living room lights on
+    - hall ki light chalu karo
+    - my dear could you kindly put the drawing room light on
+    - would you switch on the hall lights i cannot see the remote
+- answer: set_light(room=living_room, state=off)
+  say:
+    - living room lights off
+    - baithak ki batti bujha do
+    - umm can you like switch off the hall light we are leaving now
+    - shut the hall lights
+- answer: set_light(room=bathroom, state=on)
+  say:
+    - bathroom light on
+    - washroom ki light jalao
+    - turn the bathroom lights on please its pitch black in there
+- answer: set_light(room=bathroom, state=off)
+  say:
+    - switch the washroom light off
+    - gusalkhana ki batti band kar do
+    - bathroom lite off krdo
+
+- answer: set_fan(room=bedroom, speed=up)
+  say:
+    - bedroom fan faster
+    - could you turn the bedroom fan up a notch
+    - bedroom ka pankha tez karo
+    - crank the bedroom fan up
+- answer: set_fan(room=bedroom, speed=down)
+  say:
+    - slow the bedroom fan down
+    - bedroom ka pankha dheere karo
+    - please reduce the bedroom fan a little
+- answer: set_fan(room=living_room, speed=up)
+  say:
+    - turn up the living room fan
+    - hall ka pankha tez kardo
+    - um can you increase the fan in the living room its warm in here
+- answer: set_fan(room=living_room, speed=down)
+  say:
+    - living room fan slower please
+    - drawing room ka pankha kam karo
+- answer: set_fan(room=kitchen, speed=up)
+  say:
+    - kitchen fan up
+    - rasoi ka pankha tez karo
+    - bump the kitchen fan up
+- answer: set_fan(room=kitchen, speed=down)
+  say:
+    - turn the kitchen fan down its too breezy while im cooking
+- answer: set_fan(room=bathroom, speed=up)
+  say:
+    - bathroom fan faster please
+    - washroom ka pankha tez kar do
+- answer: set_fan(room=bathroom, speed=down)
+  say:
+    - bathroom fan down
+- answer: set_fan(speed=up)
+  say:
+    - fan faster
+    - speed the fan up a bit
+    - pankha tez karo
+- answer: set_fan(speed=down)
+  say:
+    - fan slower
+    - turn the fan down
+    - pankha dheere karo
+    - could you slow the fan down a touch its chilly
+    - ease the fan back a bit
+
+- answer: set_timer(minutes=10)
+  say:
+    - set a timer for 10 minutes
+    - das minute ka timer laga do
+- answer: set_timer(minutes=5)
+  say:
+    - timer for 5 minutes
+    - can you set a five minute timer for the tea
+- answer: set_timer(minutes=20)
+  say:
+    - could you please set a timer for twenty minutes
+    - 20 min timer
+- answer: set_timer(minutes=15)
+  say:
+    - um set a timer for like fifteen minutes for the rice
+    - give me a timer for quarter of an hour
+    - pandrah minute ka timer laga do
+- answer: set_timer(minutes=45)
+  say:
+    - 45 minute timer plz
+    - set a timer for forty five minutes
+- answer: set_timer(minutes=90)
+  say:
+    - set timer 90 minutes
+    - ninety minute timer for the laundry
+- answer: set_timer(minutes=2)
+  say:
+    - two minute timer
+    - do minute ka timer lagao
+- answer: set_timer(minutes=30)
+  say:
+    - timer 30
+    - would you set a timer for thirty minutes for the oven
+- answer: set_timer(minutes=1)
+  say:
+    - set a one minute timer
+- answer: set_timer(minutes=60)
+  say:
+    - set a timer for sixty minutes
+    - saath minute ka timer laga do
+- answer: set_timer(minutes=7)
+  say:
+    - timer for seven minutes
+- answer: set_timer(minutes=25)
+  say:
+    - set a 25 minute timer for my nap
+- answer: set_timer(minutes=12)
+  say:
+    - can you start a twelve minute timer
+- answer: set_timer(minutes=180)
+  say:
+    - set a timer for 180 minutes
+- answer: set_timer(minutes=3)
+  say:
+    - 3 minute timer thanks
+
+- answer: show(what=temperature)
+  say:
+    - show me the temperature
+    - what is the temperature in here
+    - temp please
+    - kitna garam hai abhi
+    - um can you tell me what the temperature is right now
+    - whats the temp
+    - garmi kitni hai batao
+    - could you read out the temperature for me dear
+    - how warm is it in here
+- answer: show(what=time)
+  say:
+    - what time is it
+    - show the time
+    - kya baja hai
+    - tell me the time please
+    - um what is the time right now
+    - time kya hua hai
+    - samay batao
+    - whats the time
+- answer: show(what=humidity)
+  say:
+    - show me the humidity
+    - what is the humidity in here
+    - humidity level please
+    - nami kitni hai
+    - could you tell me the humidity
+    - humidity check kar ke batao
+    - um how much humidity is there right now
+    - whats the humidity like today
+    - how muggy is it in here
+
+- answer: none
+  say:
+    - the bathroom door is stuck again
+    - she bought a new lamp for the hall yesterday
+    - my phone timer went off while i was cooking
+    - do you know when the electrician is coming
+    - that song was on the radio all morning
+    - the humidity here ruins my hair every july
+    - we painted the bedroom walls last summer
+    - i think the fan belt in the car needs changing
+    - its too dark in here
+    - um so anyway my brother works the night shift now
+    - the timer app on my watch is broken
+    - kitne baje nikalna hai kal
+    - rasoi me chini khatam ho gayi hai
+    - pankhe ki awaaz bahut tez hai
+    - batti jalane ka bill kitna aaya
+    - my grandmother lived in that drawing room for years
+    - the washroom at the station was surprisingly clean
+    - he turned the page and kept reading
+    - the shop closes at eight i think
+    - temperature checks at the gate took forever
+    - we switched to a new internet provider
+    - up the stairs and second door on the left
+    - i am not a fan of that colour
+    - nami wale mausam me kapde sukhte nahi
+    - did you watch the match last night
+    - the kitchen renovation is going to cost a lot
+    - mere kamre me ac nahi hai
+    - light rain is expected tomorrow evening
+    - he has a really down to earth attitude
+    - turn left at the temple and you will see it
+    - gusalkhana thoda chhota hai
+    - can you believe it is already september
+    - my laptop battery drains faster when its hot

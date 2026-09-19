@@ -1,0 +1,224 @@
+# stranger test set for examples/robot.yaml
+# written blind: only the slot values and the command names were looked at,
+# never the training sentences. six imagined speakers, one small table robot.
+
+- answer: move(heading=forward, steps=10)
+  say:
+    - move forward 10 steps
+    - robot go ahead ten steps
+- answer: move(heading=forward, steps=5)
+  say:
+    - could you move five steps forward please
+- answer: move(heading=back, steps=3)
+  say:
+    - back up three steps
+- answer: move(heading=back, steps=5)
+  say:
+    - back off five steps
+- answer: move(heading=forward, steps=6)
+  say:
+    - six steps forward
+- answer: move(heading=back, steps=20)
+  say:
+    - reverse twenty steps
+- answer: move(heading=back, steps=2)
+  say:
+    - peeche do kadam chalo
+- answer: move(heading=left, steps=4)
+  say:
+    - move left four steps
+- answer: move(heading=left, steps=15)
+  say:
+    - go fifteen steps to the left
+- answer: move(heading=right, steps=6)
+  say:
+    - move right six steps
+- answer: move(heading=right, steps=8)
+  say:
+    - daayen aath kadam chalo
+- answer: move(heading=forward, steps=50)
+  say:
+    - um can you move the robot forward about fifty steps
+- answer: move(heading=forward, steps=100)
+  say:
+    - straight 100 steps
+- answer: move(heading=forward, steps=12)
+  say:
+    - aage barah kadam chal
+- answer: move(heading=back, steps=1)
+  say:
+    - one step back
+- answer: move(heading=left, steps=7)
+  say:
+    - baayen saat kadam jao
+- answer: move(heading=right, steps=30)
+  say:
+    - would you mind moving thirty steps to the right
+- answer: move(heading=forward, steps=25)
+  say:
+    - move 25 stps ahead pls
+
+- answer: turn(heading=left, degrees=90)
+  say:
+    - turn left 90 degrees
+    - make a quarter turn to the left
+- answer: turn(heading=left)
+  say:
+    - turn left
+    - baayen ghumao
+    - turn to the left please
+- answer: turn(heading=right, degrees=45)
+  say:
+    - rotate right forty five degrees
+- answer: turn(heading=right)
+  say:
+    - robot turn right
+    - daayen mudo
+    - can you rotate right a bit
+    - turn right a lil bit
+- answer: turn(heading=left, degrees=30)
+  say:
+    - could you please turn thirty degrees to the left
+- answer: turn(heading=right, degrees=180)
+  say:
+    - spin right 180 degrees
+- answer: turn(heading=left, degrees=15)
+  say:
+    - turn fifteen degrees left
+- answer: turn(heading=right, degrees=90)
+  say:
+    - daayen nabbe degree ghumo
+- answer: turn(heading=left, degrees=60)
+  say:
+    - um turn it uh sixty degrees to the left
+- answer: turn(heading=right, degrees=20)
+  say:
+    - turn right twenty degrees
+- answer: turn(heading=back)
+  say:
+    - turn around
+- answer: turn(heading=back, degrees=180)
+  say:
+    - turn back 180 degrees
+- answer: turn(heading=left, degrees=10)
+  say:
+    - rotate 10 degrees left
+
+- answer: stop
+  say:
+    - stop
+    - stop the robot
+    - robot stop now
+    - halt
+    - stop please
+    - ok robot stop right there
+    - ruk jao
+    - bas ruko
+    - stop stop stop
+    - hold it
+    - freeze
+    - can you stop it
+    - stop moving
+    - plz stop
+    - um stop the robot please its about to hit the chair
+    - rok do abhi
+
+- answer: grab
+  say:
+    - grab it
+    - close the gripper
+    - pick that up
+    - grab the block
+    - robot grab
+    - pakad lo
+    - uthao wo box
+    - can you grab that for me
+    - close the claw
+    - grip it please
+    - grab it plz
+    - um could you grab the cup on the table
+    - hold the bottle
+    - claw close
+    - pakdo isko
+    - would you pick up that screwdriver
+    - clamp down on it
+
+- answer: release
+  say:
+    - release
+    - let go
+    - open the gripper
+    - drop it
+    - release the block
+    - chhod do
+    - open the claw
+    - put it down
+    - let it go please
+    - release plz
+    - um can you let go of the cup now
+    - drop the ball
+    - chhodo isko
+    - open hand
+    - would you release that for me
+    - leave it there
+
+- answer: set_speed(rate=fast)
+  say:
+    - go fast
+    - set speed to fast
+    - tez chalo
+    - robot speed fast
+    - jaldi chalo
+    - please move quickly
+- answer: set_speed(rate=slow)
+  say:
+    - slow down
+    - move slowly
+    - dheere chalo
+    - um can you go a bit slower please
+    - aaram se chalo
+    - set speed slow
+    - move at a crawl
+- answer: set_speed(rate=normal)
+  say:
+    - normal speed
+    - set the speed to normal
+    - speed medium kar do
+    - theek thaak speed rakho
+    - regular speed please
+
+- answer: none
+  say:
+    - the bus stop is two blocks away
+    - i grab lunch around one usually
+    - she turned down the job offer
+    - my right shoe is falling apart
+    - the traffic was moving slowly all the way home
+    - degrees in engineering take four years here
+    - um so anyway the meeting got pushed to friday
+    - that movie was released last month
+    - he is a fast learner
+    - the claw machine at the mall ate my money
+    - do you know if the shop is open on sunday
+    - left overs from dinner are in the fridge
+    - seedha rasta yahi hai kya
+    - mere paas time nahi hai
+    - wo bahut jaldi chala gaya
+    - peeche wali gali band hai
+    - dheere dheere sab theek ho jayega
+    - robot ka naam kya rakha hai tumne
+    - i stopped by the library on my way
+    - the gripper on the conveyor belt broke last week
+    - how fast can a cheetah run
+    - the forward on that team scored twice
+    - the washing machine spin cycle is noisy
+    - i need to step out for a minute
+    - we walked about twenty minutes to get there
+    - hold on i am on a call
+    - the temperature dropped ten degrees overnight
+    - she said she would call me back later
+    - my laptop is so slow these days
+    - straight from the oven it tasted amazing
+    - ninety percent of the class passed
+    - um i forgot what i was going to say
+    - that was a quick turnaround from the team
