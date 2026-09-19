@@ -261,6 +261,14 @@ static void reply(void)
     put_fixed6(result.intent_probability);
     uart_put(",\"slot\":");
     put_fixed6(result.slot_probability);
+    uart_put(",\"margin\":");
+    put_fixed6(result.intent_margin);
+    uart_put(",\"unknown\":");
+    put_u32((uint32_t)result.unknown_count);
+    uart_put(",\"unknown_share\":");
+    put_fixed6(result.unknown_share);
+    uart_put(",\"all_carrier_unknown\":");
+    uart_put(result.all_carrier_unknown ? "true" : "false");
     uart_put(",\"unsure\":");
     uart_put(result.unsure ? "true" : "false");
     uart_put(",\"micros\":");

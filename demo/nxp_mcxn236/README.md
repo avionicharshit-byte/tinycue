@@ -11,9 +11,14 @@ when the answer is unsure or is not a command.
 
 ```
 {"text":"turn on the bedroom light","command":"set_light",
- "slots":{"state":"on","room":"bedroom"},"missing":[],"confidence":0.995596,
- "intent":0.999083,"slot":0.986113,"unsure":false,"micros":5029,"cycles":754524}
+ "slots":{"state":"on","room":"bedroom"},"missing":[],"confidence":0.997211,
+ "intent":0.999969,"slot":0.989763,"margin":0.999952,"unknown":0,
+ "unknown_share":0.000000,"all_carrier_unknown":false,"unsure":false,
+ "micros":5366,"cycles":804963}
 ```
+
+`margin`, `unknown`, `unknown_share` and `all_carrier_unknown` are the evidence
+the confidence gate used, the same four fields the desktop tool prints.
 
 The measured numbers are in [board-results.md](board-results.md).
 
@@ -53,7 +58,7 @@ are build output, not source, so they are not in git.
 
 `FAST_EXP=0` builds the plain double version. The default, `FAST_EXP=1`, passes
 `-DENLU_FAST_EXP` and does the two exponentials in the CRF forward pass in
-single precision. On this chip that is 2.7 times faster, for the same answers to
+single precision. On this chip that is 2.6 times faster, for the same answers to
 six decimals. The M33 has a single precision FPU, so every double is software.
 
 ## What the board does
@@ -71,7 +76,7 @@ six decimals. The M33 has a single precision FPU, so every double is software.
   instruction level. If the trace unit is not powered the firmware falls back to
   a free running SysTick; the boot banner says which one is in use.
 - The model is a `const` array, so it is read straight out of flash. Only the
-  10,712 byte scratch buffer and a few line buffers are in RAM.
+  10,744 byte scratch buffer and a few line buffers are in RAM.
 
 ## Not verified
 
