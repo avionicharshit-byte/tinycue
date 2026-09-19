@@ -10,6 +10,21 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Harshit Dev" }]
+keywords = ["nlu", "intent", "slot filling", "embedded", "microcontroller", "offline"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: C",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Embedded Systems",
+  "Topic :: Text Processing :: Linguistic",
+]
 dependencies = [
   "pyyaml>=6.0",
   "numpy>=1.24",
@@ -17,16 +32,42 @@ dependencies = [
   "python-crfsuite>=0.9.9",
 ]
 
+[project.urls]
+Homepage = "https://github.com/avionicharshit-byte/edge-nlu"
+Repository = "https://github.com/avionicharshit-byte/edge-nlu"
+Issues = "https://github.com/avionicharshit-byte/edge-nlu/issues"
+Documentation = "https://github.com/avionicharshit-byte/edge-nlu/blob/main/docs/install.md"
+
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "hatchling>=1.21"]
 demo = ["pyserial>=3.5"]
 voice = ["pyserial>=3.5", "vosk>=0.3.44", "sounddevice>=0.4"]
 
 [project.scripts]
 edgenlu = "edgenlu.cli:main"
 
+# The wheel carries the package, the language files inside it, and the two C runtime
+# sources. The runtime lives in runtime/ in git and is copied into the wheel from there,
+# so there is exactly one copy under version control.
 [tool.hatch.build.targets.wheel]
 packages = ["src/edgenlu"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"runtime/edgenlu.h" = "edgenlu/runtime/edgenlu.h"
+"runtime/edgenlu.c" = "edgenlu/runtime/edgenlu.c"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/edgenlu",
+  "runtime/edgenlu.h",
+  "runtime/edgenlu.c",
+  "runtime/cli.c",
+  "runtime/Makefile",
+  "docs",
+  "examples",
+  "README.md",
+  "LICENSE",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

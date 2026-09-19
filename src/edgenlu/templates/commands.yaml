@@ -1,0 +1,123 @@
+# {name}.yaml: the commands file. This one file is the whole input.
+#
+# A toy coffee machine, here so you have something that trains and runs in seconds.
+# Replace it with your own device: the shape stays the same.
+#
+#   edgenlu check {name}.yaml --extra {name}.extra.yaml
+#   edgenlu train {name}.yaml --extra {name}.extra.yaml --dev {name}.dev.yaml -o out/model
+#   edgenlu parse out/model "make me two lattes"
+#
+# The parts:
+#   language:      which language word lists to pull in
+#   slots:         the kinds of value a command carries, and the words people say
+#   commands:      what the device can do, with example sentences
+#   equivalents:   words that mean the same here, for the generator to swap around
+#   none_examples: sentences that ask for nothing this device can do
+#   fallback:      what happens when the model is not sure
+#
+# Markup in an example: [the spoken words](slot_name)
+#   "make me [two](cups) [lattes](drink)"  ->  cups=2, drink=latte
+#
+# Quote every example. YAML reads a line starting with "[" as a list.
+
+# "hinglish" means Hindi typed in Latin letters. Drop it if your users type English only.
+language: [en, hinglish]
+
+slots:
+
+  # A value list slot. The canonical value on the left is what your code receives; the
+  # list on the right is what people actually say. Put the most common form first.
+  drink:
+    values:
+      espresso: [espresso, short black, black coffee]
+      latte: [latte, milk coffee, doodh wali coffee]
+      cappuccino: [cappuccino, cappu, froth coffee]
+      tea: [tea, chai, masala chai]
+
+  # A number slot. No value list: the model reads digits, English number words and Hindi
+  # number words, so "2", "two" and "do" all arrive as 2.
+  cups:
+    type: number
+    min: 1
+    max: 6
+
+  strength:
+    values:
+      strong: [strong, stronger, extra strong, kadak, tez]
+      mild: [mild, milder, weak, halka, halki]
+
+commands:
+
+  # Brew a drink. The cup count is optional: with none, the machine makes one.
+  - name: brew
+    slots:
+      - name: drink
+        required: true
+      - name: cups
+        required: false
+    examples:
+      - "make me a [latte](drink)"
+      - "brew [two](cups) [espresso](drink)"
+      - "i would like a [cappuccino](drink) please"
+      - "[do](cups) cup [chai](drink) banao"
+      - "pour me [three](cups) [black coffee](drink)"
+      - "ek [latte](drink) bana do"
+      - "can i get a [tea](drink)"
+      - "[4](cups) [cappuccino](drink) chahiye"
+
+  # Change how strong the next drink is.
+  - name: set_strength
+    slots: [strength]
+    examples:
+      - "make it [stronger](strength)"
+      - "[kadak](strength) banao"
+      - "i want it [mild](strength)"
+      - "coffee thodi [halki](strength) rakhna"
+      - "[extra strong](strength) please"
+      - "[weak](strength) coffee banao"
+
+  # Stop whatever the machine is doing. No slots at all: a command may have none.
+  - name: stop_machine
+    slots: []
+    examples:
+      - "stop"
+      - "stop the machine"
+      - "cancel that"
+      - "band karo"
+      - "ruko abhi"
+      - "forget it stop"
+
+# Words that mean the same thing on this device. The generator swaps them around, so the
+# model sees wording you never typed. These never touch a slot span, and nothing here is
+# built in: every device writes its own.
+equivalents:
+  - [make, brew, prepare]
+  - [banao, bana do, bana dena]
+  - [cup, cups, mug]
+  - [please, zara, plz]
+
+# Sentences that ask for nothing this device can do. Near misses belong here: they reuse
+# the device's own words and still mean nothing to it. Write plenty.
+none_examples:
+  - "who invented the espresso machine"
+  - "i drink tea every morning"
+  - "the coffee shop down the road is closed"
+  - "how many cups are in the cupboard"
+  - "chai pe charcha"
+  - "is coffee bad for sleep"
+  - "stop talking about coffee"
+  - "the mug is chipped"
+  - "latte art looks hard"
+  - "kal maine bahut chai pi thi"
+
+fallback:
+  # The confidence below which the answer becomes "unsure" instead of an action.
+  # "auto" lets the trainer pick it from held-out scores and print what it chose.
+  unsure_below: auto
+
+  # Keep this on. Anything off topic maps to "no command" instead of the nearest guess.
+  none_command: true
+
+  # "ask" shows a "did you mean ...?" prompt. "cloud" hands the sentence to something
+  # bigger if the device has a network.
+  on_unsure: ask

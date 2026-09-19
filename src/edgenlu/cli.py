@@ -1,4 +1,4 @@
-"""The edgenlu command line: check, generate, train, doctor, eval, export and parse."""
+"""The edgenlu command line: init, check, generate, train, doctor, eval, export, parse."""
 
 from __future__ import annotations
 
@@ -8,12 +8,15 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from . import answers, doctor as doctor_report, evaluate, model as bundle
+from . import __version__, answers, doctor as doctor_report, evaluate, model as bundle
+from . import starter
 from .calibrate import TARGET_ACCURACY
 from .features import DEFAULT_BUCKETS
 from .generator import generate
 from .parser import load_examples_file, load_spec, tokenize
+from .runtime_files import RuntimeMissing, copy_runtime
 from .schema import NUMBER, SpecError
+from .starter import InitError
 from .train import read_jsonl, train, write_jsonl
 
 # A file here is a test set, not a tuning set. `heldout` is the final exam and `stranger`
@@ -53,7 +56,14 @@ def main(argv: list[str] | None = None) -> int:
         prog="edgenlu",
         description="Offline command understanding for tiny devices.",
     )
+    parser.add_argument("--version", action="version", version=f"edgenlu {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
+
+    init = sub.add_parser("init", help="write a starter commands file, extra file and dev file")
+    init.add_argument("name", help="what to call the files, for example coffee")
+    init.add_argument(
+        "-d", "--dir", default=".", metavar="DIR", help="where to write them (default here)"
+    )
 
     def add_extra(target):
         target.add_argument(
@@ -164,6 +174,11 @@ def main(argv: list[str] | None = None) -> int:
     ex = sub.add_parser("export", help="write a bundle out for the C runtime")
     ex.add_argument("model", help="path to the model bundle")
     ex.add_argument("-o", "--out", default="out/device", help="where to write the blob")
+    ex.add_argument(
+        "--with-runtime",
+        action="store_true",
+        help="copy edgenlu.h and edgenlu.c in beside the model, so the folder builds on its own",
+    )
 
     ps = sub.add_parser("parse", help="read one sentence with a trained bundle")
     ps.add_argument("model", help="path to the model bundle")
@@ -174,6 +189,8 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     try:
+        if args.command == "init":
+            return _init(args)
         if args.command == "check":
             return _check(args)
         if args.command == "generate":
@@ -187,12 +204,27 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "export":
             return _export(args)
         return _parse(args)
-    except SpecError as exc:
+    except (SpecError, InitError, RuntimeMissing) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     except OSError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+
+
+def _init(args) -> int:
+    written = starter.write(args.name, args.dir)
+    spec, extra, dev = (str(p) for p in written)
+    print("wrote:")
+    for path in written:
+        print(f"  {path}")
+    print()
+    print("next:")
+    print(f"  edgenlu check {spec} --extra {extra}")
+    print(f"  edgenlu train {spec} --extra {extra} --dev {dev} -o out/model")
+    print('  edgenlu parse out/model "make me two lattes"')
+    print("  edgenlu export out/model -o out/device --with-runtime")
+    return 0
 
 
 def _check(args) -> int:
@@ -426,6 +458,10 @@ def _export(args) -> int:
           f"{result['labels']} tags, {result['table_size']} buckets")
     print(f"  {result['vocabulary']} training words, {result['gate_weights']} gate weights")
     print(f"  plus model_data.h and model_data.c in {args.out}")
+    if args.with_runtime:
+        for path in copy_runtime(args.out):
+            print(f"  plus {path.name}")
+        print(f"  {args.out} now builds on its own: cc -std=c99 *.c your_main.c -lm")
     return 0
 
 

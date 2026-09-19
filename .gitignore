@@ -52,3 +52,6 @@ demo/voice/nxp_mic_stream/model_data.h
 demo/voice/nxp_mic_stream/build/
 demo/voice/nxp_mic_stream/voice.elf
 demo/voice/nxp_mic_stream/voice.map
+
+# The wheel build copies the C runtime in here. Never commit the copy.
+src/edgenlu/runtime/
