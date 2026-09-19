@@ -152,10 +152,9 @@ class Model:
         tagger = self.tagger
         tagger.set(items)
         tags = tagger.tag()
-        try:
-            probability = float(tagger.probability(tags))
-        except Exception:
-            probability = 1.0
+        # No guard here on purpose. A failure means the tagger and the features no longer
+        # agree, and swallowing it would report a confident answer built on nothing.
+        probability = float(tagger.probability(tags))
         return tags, probability
 
     def confidence(self, intent_probability: float, slot_probability: float) -> float:
