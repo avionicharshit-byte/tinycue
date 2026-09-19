@@ -1,35 +1,47 @@
 # edge-nlu
 
-Edge-nlu turns a file of example commands into a small model that understands typed or spoken
-orders fully offline. You describe the commands and slots you want, and the tool expands your
-examples into training data for a tiny intent model and a word tagger. The goal is plain C99 plus
-a model file under 1 MB, small enough for an ESP32 or a Raspberry Pi, with English and Hinglish
-support.
+Turn a short list of example commands into a 205 KB model and two C files, so a
+microcontroller can understand typed or transcribed English and Hinglish commands with no
+network, no LLM and no per-request cost.
 
-Status: milestone M3. The commands file parser, the example generator, training, calibration, the
-command line, the C99 device runtime and three board demos all work. The C runtime is proved
-against Python on 842 sentences, and it runs offline on a classic ESP32 and on an Arm Cortex-M33,
-in under 5 milliseconds a sentence on both, with the same source file and no chip specific code.
-There is also a [voice demo](demo/voice) where you speak to the boards, with the speech to text
-running on the laptop. See [PLAN.md](PLAN.md) for what is left.
+What you get from one YAML file:
+
+- A model trained on your laptop in about 4 seconds, exported as one flat blob plus C99
+  source. No malloc, no file IO, and the weights are read where they lie, so they stay in
+  flash.
+- An answer in 2.5 to 7.9 milliseconds on the boards below, about 7.5 microseconds on a
+  desktop.
+- A calibrated confidence on every answer, and a tuned cut-off below which the device says
+  "unsure" instead of guessing. You choose what happens then: ask again, or hand the
+  sentence to something bigger.
+- English and Hinglish, Hindi typed in Latin letters, including number words. "10", "ten"
+  and "das" all arrive as `10`.
+
+edge-nlu is not speech to text. Any recogniser can feed it text; see
+[the voice demo](demo/voice) for one that does.
+
+**Status: early, private preview.** It works and it is measured, but the APIs and the
+model format may still change. Apache-2.0.
 
 ![How edge-nlu works](diagrams/edge-nlu-flow.png)
 
-## The commands file
+## Thirty seconds with it
 
-One YAML file describes everything. Slots list the words people use, and each example marks the
-slot spans with `[surface text](slot_name)`.
+You write the commands and the words people use for them. Slot spans are marked
+`[surface text](slot_name)`.
 
 ```yaml
+language: [en, hinglish]
+
 slots:
   room:
     values:
-      bedroom: [bedroom, bed room, sone ka kamra]
+      bedroom: [bedroom, bed room, sone ka kamra, kamre]
       kitchen: [kitchen, rasoi]
   state:
     values:
-      "on": ["on", chalu, jala do]
-      "off": ["off", band, band kar do]
+      "on": ["on", chalu, jala do, jalao]
+      "off": ["off", band, bujha do, band kar do]
 
 commands:
   - name: set_light
@@ -39,251 +51,280 @@ commands:
       - "[rasoi](room) mein light [jala do](state)"
 ```
 
-Two full examples ship with the tool, from two unrelated domains:
-[examples/smart_home.yaml](examples/smart_home.yaml) (lights, fan, timer, sensor readings) and
-[examples/robot.yaml](examples/robot.yaml) (drive, turn, stop, gripper, speed). Nothing in the
-Python package knows about either one; a test fails the build if a domain word ever appears in
-`src/edgenlu`.
-
-A commands file can also carry three optional blocks: `equivalents` (word groups the generator
-swaps around), `fillers` (extra filler words) and `none_examples` (out-of-scope sentences, which
-is where near misses like "i am a big fan of cricket" belong). Filler words, droppable carrier
-words and a base list of out-of-scope sentences come from the language files in
-`src/edgenlu/langs/`, picked by the `language:` list.
-
-## Install and run
-
-Needs Python 3.10 or newer. Using [uv](https://docs.astral.sh/uv/):
-
-```sh
-uv venv --python 3.12
-uv pip install -e ".[dev]"
-```
-
-Check a commands file, then train, evaluate and read a sentence:
+Then three commands:
 
 ```sh
 .venv/bin/edgenlu check examples/smart_home.yaml
 .venv/bin/edgenlu train examples/smart_home.yaml -n 1500 --seed 0 -o out/model
-.venv/bin/edgenlu eval out/model --data out/splits/test.jsonl
-.venv/bin/edgenlu eval out/model --data eval/heldout_smart_home.yaml
-.venv/bin/edgenlu parse out/model "turn on the bedroom light"
-```
-
-```
-set_light(state=on, room=bedroom) confidence=0.98
-```
-
-`edgenlu generate` writes the training examples on their own, one JSON object per line with
-`tokens`, `tags`, `command` and `slots`.
-
-## On a device
-
-Export the bundle as one flat blob plus C source, then build the runtime:
-
-```sh
 .venv/bin/edgenlu export out/model -o out/device
-make -C runtime
-echo "fan tez karo" | runtime/enlu_cli out/device/model.bin
 ```
 
+And you can read sentences:
+
 ```
-{"text":"fan tez karo","command":"set_fan","slots":{"speed":"up"},"missing":[],
- "confidence":0.995,"intent":0.999,"slot":0.986,"unsure":false,"micros":4.2}
+$ .venv/bin/edgenlu parse out/model "turn on the bedroom light"
+set_light(state=on, room=bedroom) confidence=1.00
+
+$ .venv/bin/edgenlu parse out/model "rasoi mein light jala do"
+set_light(room=kitchen, state=on) confidence=1.00
+
+$ .venv/bin/edgenlu parse out/model "das minute ka timer laga do"
+set_timer(minutes=10) confidence=1.00
+
+$ .venv/bin/edgenlu parse out/model "i am a big fan of cricket"
+none confidence=0.97
+
+$ .venv/bin/edgenlu parse out/model "light band karo"
+set_light(state=off) confidence=0.99 missing: room
+
+$ .venv/bin/edgenlu parse out/model "flick the bedroom lamp on"
+unsure (best guess: none confidence=0.65)
 ```
 
-`out/device/` holds `model.bin`, and `model_data.c` and `model_data.h`, which are the same bytes
-as a `const unsigned char[]` for flashing. The format is written out in
-[docs/model-format.md](docs/model-format.md).
+Four things happened there. A Hindi number word came back as an integer. An off-topic
+sentence was named as off-topic rather than forced into the nearest command. A sentence
+that named no room said which slot was missing instead of inventing one. And "flick" and
+"lamp", which appear in no example sentence, dropped the confidence under the cut-off, so
+the device asks rather than guesses. The Python command line rounds confidence to two
+decimals; the C runtime prints the full number, and the first sentence there reads
+`"confidence":0.995596,"intent":0.999083,"slot":0.986114,"unsure":false`.
 
-The runtime is two files, `runtime/edgenlu.h` and `runtime/edgenlu.c`: portable C99, no malloc
-after init, no file reading, nothing beyond libc and libm. The caller hands it a scratch buffer and
-it reads the model where it lies, so on a microcontroller the weights never leave flash. The API is
-two calls:
+## How it works
 
-```c
-int enlu_init(enlu_model *model, const uint8_t *blob, size_t len);
-int enlu_parse(const enlu_model *model, const char *text, enlu_result *out,
-               void *scratch, size_t scratch_len);
-```
+Two words are worth defining first. The **intent** is which command was meant:
+`set_light`, `set_timer`, or `none` for anything off-topic. The **slots** are the values
+that command carries: which room, which state, how many minutes. "turn on the bedroom
+light" has the intent `set_light` and the slots `room=bedroom, state=on`.
 
-`enlu_result` carries the command name, the slots with their canonical values or numbers, any
-required slots that were left out, the confidence and its two halves, and an `unsure` flag. The
-best guess is filled in even when the answer is unsure.
+On your laptop:
+
+1. A generator grows your handful of examples into thousands, swapping in every slot value
+   and synonym, inserting filler words, dropping carrier words and swapping equivalent
+   words. It never touches a token inside a slot span.
+2. Two small models train on that. A linear classifier over word and character n-gram
+   features picks the intent. A linear-chain CRF labels each word so the slot values can
+   be pulled out. Tags carry the slot *type*, not the slot name, so two commands that both
+   take a `direction` share every training example of it.
+3. Calibration makes the confidence honest and picks the cut-off: temperature scaling on
+   the intent probability, a fitted exponent on the tagger's sequence probability, and the
+   lowest cut-off whose accepted answers are right at least 99% of the time on dev data.
+4. Export writes the whole thing as one blob, plus the same bytes as a `const unsigned
+   char[]` for flashing. The format is in [docs/model-format.md](docs/model-format.md).
+
+On the device, text goes in and a command, its slot values, any required slot left out,
+and a confidence come back. Under the cut-off the `unsure` flag is set, and the best guess
+is still filled in so you can show it. A value the tagger finds but nobody listed is
+passed through as text with `known` set to 0, which is how an invented name survives.
 
 ## Boards tested
 
-Both boards ran the same 31 sentences, the same smart home model and the same `runtime/edgenlu.c`.
-Every answer matched the desktop C tool: the same command, slot values, missing slots and unsure
-flag, and on the Cortex-M33 the confidence was identical to all six printed decimals.
+The same `runtime/edgenlu.c` and the same smart home model on both, over the same 31
+sentences. Nothing in `runtime/` was changed to port it to the second chip, and the build
+is warning free.
 
 | | classic ESP32 | NXP FRDM-MCXN236 |
 | --- | --- | --- |
 | core | Xtensa LX6, 240 MHz | Arm Cortex-M33, 150 MHz |
 | build | Arduino sketch, round display | bare metal, no RTOS |
-| flash image | 540,632 bytes | 241,352 bytes |
+| flash image | 540,632 bytes, 41% of the app partition | 241,352 bytes, 23% of 1 MB |
 | static RAM | 40,828 bytes | 20,976 bytes |
 | model blob, in flash | 209,640 bytes | 209,640 bytes |
 | scratch buffer | 10,712 bytes | 10,712 bytes |
-| parse, fastest | 2,537 us | 2,318 us |
-| parse, mean | 4,376 us | 4,805 us |
-| parse, slowest | 6,534 us | 7,873 us |
+| parse: fastest, mean, slowest | 2,537 / 4,376 / 6,534 us | 2,318 / 4,805 / 7,873 us |
 | sentences matching the desktop | 31 of 31 | 31 of 31 |
+| free heap after 31 sentences | unchanged from boot | no heap at all |
 
-The two flash numbers are not the same measurement: the ESP32 image carries the Arduino core and
-the display library, the MCXN236 one carries four NXP drivers. Both boards are timed around
-`enlu_parse` alone, on the board, with `-DENLU_FAST_EXP`.
+The two flash numbers are not the same measurement: the ESP32 image carries the Arduino
+core and the display library, the MCXN236 one carries four NXP drivers. Both are timed
+around `enlu_parse` alone, on the board, with `-DENLU_FAST_EXP`, which does the two
+exponentials in the CRF forward pass in single precision. On the M33, which has no
+hardware double, that flag is worth 2.7 times for identical answers. Per-sentence tables:
+[ESP32](demo/esp32_round/board-results.md),
+[FRDM-MCXN236](demo/nxp_mcxn236/board-results.md).
 
-### The ESP32 demo
+## Use it in your firmware
 
-[demo/esp32_round](demo/esp32_round) runs the smart home model on a classic ESP32 with a 1.28 inch
-round GC9A01 display. It reads a sentence from USB serial, answers with one JSON line, and draws
-the command on the screen with a confidence ring around the rim. No Wi-Fi.
+Copy `runtime/edgenlu.h` and `runtime/edgenlu.c` into your project along with the
+`model_data.c` and `model_data.h` that `edgenlu export` wrote. There is nothing else to
+link.
 
-```sh
-make model          # train and export
-make demo-flash     # copy the runtime in, build and upload
-.venv/bin/python demo/send.py "turn on the bedroom light"
+```c
+#include <stdio.h>
+#include "edgenlu.h"      /* the runtime, two files, nothing else */
+#include "model_data.h"   /* enlu_model_data[] and its length, written by edgenlu export */
+void ask_again(void);     /* your own "did you mean ...?" prompt */
+
+static enlu_model model;
+static enlu_result out;
+static uint8_t scratch[12288] __attribute__((aligned(8)));
+
+int nlu_begin(void)                     /* once, at boot */
+{
+    if (enlu_init(&model, enlu_model_data, enlu_model_data_len) != ENLU_OK) return -1;
+    return enlu_scratch_size(&model) <= sizeof scratch ? 0 : -1;
+}
+
+void nlu_handle(const char *sentence)   /* once per sentence */
+{
+    int i;
+    if (enlu_parse(&model, sentence, &out, scratch, sizeof scratch) != ENLU_OK) return;
+    if (out.unsure || out.is_none) { ask_again(); return; }
+    printf("%s at %.2f\n", out.command, out.confidence);
+    for (i = 0; i < out.slot_count; i++)
+        if (out.slots[i].is_number) printf("  %s = %d\n", out.slots[i].name, (int)out.slots[i].number);
+        else                        printf("  %s = %s\n", out.slots[i].name, out.slots[i].text);
+    for (i = 0; i < out.missing_count; i++) printf("  %s missing\n", out.missing[i]);
+}
 ```
 
-Full numbers in [demo/esp32_round/board-results.md](demo/esp32_round/board-results.md). The screen
-drawing has not been checked by eye.
-
-### The Cortex-M33 demo
-
-[demo/nxp_mcxn236](demo/nxp_mcxn236) is the portability proof: the same runtime on an NXP
-FRDM-MCXN236, bare metal, flashed with pyOCD over the on-board debug probe. No line of
-`runtime/edgenlu.c` was changed for it, and the build is warning free. It answers on the debug
-serial port and lights the red LED when the answer is unsure.
+`enlu_scratch_size` asked for 10,712 bytes for the smart home model, so the buffer above
+has room to spare. Both calls return a negative code on refusal, which `enlu_error` turns
+into a line of text. Nothing after `enlu_init` allocates or opens a file. The same runtime
+builds for the desktop, for trying things without a board:
 
 ```sh
-make model                        # train and export
-make nxp-flash                    # copy the runtime in, build and flash
-.venv/bin/python demo/send.py -p /dev/cu.usbmodem<probe>3 "turn on the bedroom light"
+make cli
+echo "fan tez karo" | runtime/enlu_cli out/device/model.bin
 ```
 
-Full numbers in [demo/nxp_mcxn236/board-results.md](demo/nxp_mcxn236/board-results.md). The M33
-has a single precision FPU only, so `-DENLU_FAST_EXP`, which does the two exponentials in the CRF
-forward pass in single precision, is worth 2.7 times there: 4,805 microseconds a sentence with it
-and 12,943 without, for the same answers to six decimals.
+```
+{"text":"fan tez karo","command":"set_fan","slots":{"speed":"up"},"missing":[],
+ "confidence":0.998809,"intent":0.999447,"slot":0.997450,"unsure":false,"micros":15.0}
+```
 
-### Saying it out loud
+## The commands file
 
-[demo/voice](demo/voice) puts the two boards together. The FRDM-MCXN236 streams its on-board
-microphone to the Mac at 16 kHz over its debug serial port, the Mac turns the speech into text with
-[Vosk](https://alphacephei.com/vosk/) offline, and the sentence goes back to both boards, which
-parse it and show the answer on the round display and the red LED.
+One YAML file is the whole input. Beyond `slots` and `commands` it takes three optional
+blocks: `equivalents` (word groups the generator swaps around), `fillers` (extra filler
+words) and `none_examples` (off-topic sentences, which is where near misses like "i am a
+big fan of cricket" belong). A `fallback` block sets the unsure cut-off, or leaves it on
+`auto`. Filler words, droppable carrier words and a base list of off-topic sentences come
+from the language files in `src/edgenlu/langs/`, picked by the `language:` list.
+
+Two worked examples ship, from unrelated domains and commented line by line:
+[examples/smart_home.yaml](examples/smart_home.yaml) (lights, fan, timer, sensor readings)
+and [examples/robot.yaml](examples/robot.yaml) (drive, turn, stop, gripper, speed).
+Nothing in the Python package knows about either one, and a test fails the build if a
+domain word ever appears in `src/edgenlu`.
+
+## Demos
+
+**[ESP32 with a round display](demo/esp32_round).** The smart home model on a classic
+ESP32 driving a 1.28 inch GC9A01 panel. It reads a sentence from USB serial, answers with
+one JSON line, and draws the command on the screen with a confidence ring around the rim.
+No Wi-Fi.
 
 ```sh
-make voice-model                          # fetch the Vosk model, 54 MB, once
-make voice-flash                          # build and flash the microphone firmware
-.venv/bin/python demo/voice/listen.py     # then speak
+make model && make demo-flash && .venv/bin/python demo/send.py "turn on the bedroom light"
 ```
 
-**The speech to text runs on the Mac, not on a chip.** edge-nlu turns text into a command; it is
-not a speech recogniser. What the chips do here is what they do everywhere else in this repository.
+**[Cortex-M33, bare metal](demo/nxp_mcxn236).** The portability proof: the same runtime on
+an NXP FRDM-MCXN236, no RTOS, no heap, flashed over the on-board debug probe. It answers
+on the debug serial port and lights the red LED when the answer is unsure.
 
-Five commands played out loud into the room were all understood correctly, in 795 to 1,099
-milliseconds from the last sound of the sentence to the answer, of which 44 milliseconds was the
-two boards and the rest was Vosk deciding the sentence had ended. The audio link runs at 1 Mbaud
-and lost no packets in 30 seconds of testing. The Vosk word list is built from the commands file,
-so it follows `--spec` and knows no domain of its own. The honest limit is that Vosk's English
-models have no entry for 152 of the 481 words in the smart home file, so every Hinglish word is
-inaudible through this path. Numbers and the full list are in
-[demo/voice/README.md](demo/voice/README.md).
+```sh
+make model && make nxp-flash && .venv/bin/python demo/send.py -p /dev/cu.usbmodem<probe>3 "turn on the bedroom light"
+```
 
-## What it does today
+**[Saying it out loud](demo/voice).** The FRDM-MCXN236 streams its on-board microphone to
+a Mac at 16 kHz over its debug serial port at 1 Mbaud, the Mac turns speech into text with
+[Vosk](https://alphacephei.com/vosk/) offline, and the sentence goes back to both boards.
 
-- **Tags carry the slot type, not the slot name.** Two commands that both take a `direction` share
-  every example of it. The command maps the type back to its own slot name when decoding.
-- **The generator grows your examples.** It swaps in every slot value and synonym, inserts filler
-  words, drops carrier words and swaps equivalent words, never touching a token inside a slot span.
-  Every command, including `none`, is grown to the same size.
-- **Numbers.** Digits, English words and Hindi words in Latin letters, 0 to 180, both directions.
-  "10", "ten", "das" and "ek sau bees" all work.
-- **Confidence is measured, not guessed.** The intent model gets temperature scaling on a held-out
-  split, the tagger's sequence probability gets a fitted exponent, and the cut-off below which the
-  answer becomes "unsure" is chosen automatically as the lowest value whose accepted answers are
-  right at least 99% of the time on dev.
-- **Two test sets.** The generated test split holds out whole phrasings, so no sentence in it grew
-  from a phrasing the model trained on. The files in `eval/` are hand-written sentences that share
-  no wording with the commands files at all, with typos and missing words. That is the honest test.
+```sh
+make voice-model && make voice-flash && .venv/bin/python demo/voice/listen.py
+```
 
-## Measured results
+Five commands played out loud into the room were all understood, 795 to 1,099 milliseconds
+from the last sound to the answer, of which 44 milliseconds was the two boards and the
+rest was Vosk deciding the sentence had ended. The audio link lost no packets in 30
+seconds. Hinglish cannot be spoken to this demo at all: Vosk's English models have no
+entry for 152 of the 481 words in the smart home file, and a word outside a
+grammar-constrained recogniser's list can never come out of it. Typed Hinglish works.
 
-Both numbers below come from `edgenlu train <spec> -n 1500 --seed 0`, on an M1 MacBook Air.
-Training takes about 5 seconds per model. Nothing here is trained on the `eval/` files.
+## Accuracy and limits
 
-| | smart home | robot |
+Two test sets, because they answer different questions. The **generated split** holds out
+whole phrasings, so it measures variations of wording you did write. The **hand-written
+held-out files** in `eval/` share no wording with the commands file at all and carry
+typos, missing slots and deliberate synonyms. That second one is the honest test.
+
+<!-- ACCURACY-UPDATE -->
+
+| smart home model | generated split | hand-written held-out |
 | --- | --- | --- |
-| commands | 4 plus `none` | 6 plus `none` |
-| hand-written examples | 56 | 72 |
-| bundle size | 305 KB | 376 KB |
-| device blob size | 205 KB | 263 KB |
-| training time | 4.7 s | 4.6 s |
-| desktop parse time, mean | 7.5 us | 4.4 us |
-| **generated test split** | 1018 sentences | 1627 sentences |
-| intent accuracy | 92.8% | 81.7% |
-| slot F1 | 98.2% | 97.6% |
-| full command accuracy | 92.7% | 80.9% |
-| ECE | 0.033 | 0.100 |
-| sent to unsure | 31.9% | 64.4% |
-| wrong answers caught | 100.0% | 98.4% |
-| accepted answers right | 100.0% | 99.1% |
-| **hand-written held-out set** | 144 sentences | 98 sentences |
-| intent accuracy | 77.1% | 42.9% |
-| slot F1 | 88.8% | 78.9% |
-| full command accuracy | 75.7% | 39.8% |
-| ECE | 0.090 | 0.166 |
-| sent to unsure | 48.6% | 87.8% |
-| wrong answers caught | 85.7% | 94.9% |
-| accepted answers right | 93.2% | 75.0% |
+| sentences | 1018 | 144 |
+| full command accuracy | 92.7% | 75.7% |
+| sent to unsure | 31.9% | 48.6% |
+| wrong answers caught by the cut-off | 100.0% | 85.7% |
+| accepted answers right | 100.0% | 93.2% |
 
-The chosen cut-off was 0.903 for the smart home model and 0.852 for the robot model. The desktop
-parse time is the C runtime over 842 sentences on an M1 MacBook Air, timed around `enlu_parse`
-alone.
+On wording it has never seen the model is not accurate, and the useful part is that it
+knows: it throws away almost half its answers, catches 86% of the ones that would have
+been wrong, and what reaches your code is right 93% of the time. The robot example is the
+harder case, at 39.8%. Its `stop`, `grab` and `release` commands carry no slots, so
+nothing but the literal words identifies them, and its held-out file deliberately uses
+synonyms ("seize", "unclamp") that appear nowhere in the commands file.
 
-The smart home numbers moved when span trimming went in. A tagged span that matches no listed
-value is now retried a word shorter, so "fan up karo" gives `speed=up` instead of `speed=up karo`.
-Full command accuracy on the generated split went from 91.5% to 92.7% and on the held-out set from
-74.3% to 75.7%. The cut-off then refitted lower, from 0.920 to 0.903, because on dev it now reaches
-100% accepted accuracy sooner. That is worse on the held-out set, where the fallback used to catch
-97.3% of the wrong answers and now catches 85.7%. The cut-off is chosen on generated dev data and
-the held-out file is harder than that data, which is the gap to close.
+**Closing that gap is the active work.** An agent skill that writes varied training
+sentences from a commands file, and an `edgenlu doctor` command that names the commands
+with thin coverage, are both in progress.
 
-Read those two blocks together. On phrasings that are variations of what you wrote, the tool is
-good. On wording it has never seen, it is not, and the honest part is that it knows: on the smart
-home held-out set it throws away 64% of answers and catches 97% of the ones that would have been
-wrong.
+Four other limits worth knowing: input is capped at 32 tokens and 256 bytes, and longer
+input is refused rather than truncated; Hinglish is typed only until there is a recogniser
+with a code-mixed lexicon; the round display and the NXP LED have never been checked by
+eye, so the JSON is verified and the pixels are not; and the blob is dominated by the
+hashed feature table, so a model with fewer commands is not much smaller, with
+`--table-size` the only knob.
 
-The robot numbers show where the approach runs out. Its `stop`, `grab` and `release` commands carry
-no slots, so nothing but the literal words identifies them, and the held-out file deliberately uses
-synonyms ("seize", "unclamp", "terminate motion") that appear nowhere in the commands file. A model
-with no word embeddings cannot reach those. The fix is to write more example sentences, which is
-the same fix as for every other gap.
+Full tables, both example specs, and the C versus Python parity numbers are in
+[docs/accuracy.md](docs/accuracy.md).
 
-## Proving the C runtime
+## How it compares
 
-`tests/test_c_parity.py` trains both example specs, exports both blobs, builds the C command line
-tool, and runs every sentence of both held-out files plus 300 generated sentences per spec through
-Python and through C: 842 sentences. It asserts the same command, the same slot values, the same
-missing slots, the same unsure flag and the confidence to within 1e-3.
+| | open source | fits an MCU | free slot values | calibrated "unsure" | Hinglish |
+| --- | --- | --- | --- | --- | --- |
+| Snips NLU, abandoned around 2020 | yes | no | yes | no | no |
+| Rhasspy / hassil | yes | needs a Pi | template matching | no | no |
+| Picovoice Rhino | no, paid | yes | yes | no | no |
+| Espressif ESP-SR MultiNet | yes | yes | no, fixed phrases | no | no |
+| cactus-compute/needle, 45M parameters | yes | seconds per command | yes | no | partly |
+| edge-nlu | yes | yes, 205 KB | yes | yes | yes |
 
-It runs Python twice. Once with the float32 weights it trained, and once with those weights
-rounded to the float16 the blob carries, which is what the C side actually reads. Against the
-float16 run there were **0 mismatches**, with the worst confidence gap 7.8e-07. Against the
-float32 run **no decision changed** on any of the 842 sentences, and the worst confidence gap was
-2.3e-04. int8 weights with a per class scale were measured too: no decision changed there either,
-but the confidence moved by up to 8.1e-03, over the 1e-3 bar, so float16 it is.
+The gap this fills: nothing else is open source *and* microcontroller sized *and* able to
+generalise past exact templates *and* honest enough about its own confidence to refuse.
 
-## Tests
+## Roadmap
+
+1. **Accuracy on unseen phrasing.** A training-sentence generator and `edgenlu doctor`, so
+   a commands file with thin coverage says so before you flash it.
+2. **Packaging.** A pip install, and an Arduino library so the runtime and a model drop
+   straight into a sketch.
+3. **Public release.** A name that is not a working name, and a first tagged version.
+
+[PLAN.md](PLAN.md) has the milestone history and the open questions.
+
+## Development
+
+Python 3.10 or newer. Using [uv](https://docs.astral.sh/uv/):
 
 ```sh
-.venv/bin/pytest -q
+uv venv --python 3.12
+uv pip install -e ".[dev]"
+.venv/bin/pytest -q          # 237 tests, about 8 seconds
+make cli                     # build the desktop C command line tool
 ```
 
-237 tests, about 8 seconds, including a full train on a small dataset and the C parity run. The
-parity tests build the runtime with `cc` and skip cleanly if no C compiler is installed.
+The test suite includes a full train on a small dataset and the C parity run, which builds
+the runtime with `cc` and skips cleanly when no C compiler is installed.
+
+## Credits
+
+The recipe, a linear intent classifier plus a CRF slot tagger, is the one
+[Snips NLU](https://github.com/snipsco/snips-nlu) used before it was abandoned. The
+framing of the output as a typed decision with a calibrated confidence, never free text,
+is borrowed from TypeSafe's Jev model. What is new here is making that fit a
+microcontroller: the flat blob read out of flash, the C99 runtime with no allocation, the
+tuned unsure path, and Hinglish.
 
 ## Licence
 
