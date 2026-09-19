@@ -1,14 +1,14 @@
 # edge-nlu
 
-Turn a short list of example commands into a 205 KB model and two C files, so a
+Turn a short list of example commands into a 249 KB model and two C files, so a
 microcontroller understands typed or transcribed English and Hinglish commands with no
 network, no LLM and no per-request cost.
 
 What you get from one YAML file:
 
-- A model trained on your laptop in about 4 seconds, exported as one flat blob plus C99
+- A model trained on your laptop in about 6 seconds, exported as one flat blob plus C99
   source. No malloc, no file IO, and the weights are read in place, in flash.
-- An answer in single digit milliseconds on the boards below, 7.5 microseconds on a desktop.
+- An answer in single digit milliseconds on the boards below, 7.9 microseconds on a desktop.
 - A calibrated confidence on every answer, and a tuned cut-off below which the device says
   "unsure" instead of guessing. Ask again, or hand the sentence to something bigger. The
   device counts the words of your sentence the model has never seen, and says so.
@@ -49,7 +49,8 @@ Then three commands, and you can read sentences:
 
 ```sh
 .venv/bin/edgenlu check examples/smart_home.yaml
-.venv/bin/edgenlu train examples/smart_home.yaml -n 1500 --seed 0 -o out/model
+.venv/bin/edgenlu train examples/smart_home.yaml --extra examples/smart_home.extra.yaml \
+    --dev examples/smart_home.dev.yaml -n 1500 --seed 0 -o out/model
 .venv/bin/edgenlu export out/model -o out/device
 ```
 
@@ -57,15 +58,16 @@ Then three commands, and you can read sentences:
 $ .venv/bin/edgenlu parse out/model "turn on the bedroom light"
 set_light(state=on, room=bedroom) confidence=1.00
 $ .venv/bin/edgenlu parse out/model "rasoi mein light jala do"
-set_light(room=kitchen, state=on) confidence=1.00
+set_light(room=kitchen, state=on) confidence=0.99
 $ .venv/bin/edgenlu parse out/model "i am a big fan of cricket"
-none confidence=0.97
+unsure (best guess: none confidence=0.84)
 $ .venv/bin/edgenlu parse out/model "flick the bedroom lamp on"
-unsure (best guess: none confidence=0.65)
+set_light(room=bedroom, state=on) confidence=0.95
 ```
 
 The off-topic sentence was named as off-topic, not forced into the nearest command, and
-"flick" and "lamp", in no example sentence, dropped the confidence under the cut-off.
+still went to unsure, because `none` is the class the model is least sure of. "flick" and
+"lamp" are in the extra sentences now, so the last one is read and accepted.
 
 The rest of the format, `equivalents`, `fillers`, `none_examples` and `fallback`, is in
 [docs/commands-file.md](docs/commands-file.md). Two worked examples ship, commented line
@@ -97,11 +99,11 @@ sentences. Nothing in `runtime/` was changed to port it to the second chip.
 | | classic ESP32 | NXP FRDM-MCXN236 |
 | --- | --- | --- |
 | core | Xtensa LX6, 240 MHz | Arm Cortex-M33, 150 MHz |
-| flash image | 540,632 bytes, 41% of the app partition | 241,352 bytes, 23% of 1 MB |
-| static RAM | 40,828 bytes | 20,976 bytes |
-| model blob, in flash | 209,640 bytes | 209,640 bytes |
-| scratch buffer | 10,712 bytes | 10,712 bytes |
-| parse: fastest, mean, slowest | 2,537 / 4,376 / 6,534 us | 2,318 / 4,805 / 7,873 us |
+| flash image | 588,492 bytes, 44% of the app partition | 289,064 bytes, 28% of 1 MB |
+| static RAM | 40,884 bytes | 21,032 bytes |
+| model blob, in flash | 255,012 bytes | 255,012 bytes |
+| scratch buffer | 10,744 bytes | 10,744 bytes |
+| parse: fastest, mean, slowest | 2,995 / 5,106 / 7,866 us | 2,524 / 5,129 / 8,455 us |
 | sentences matching the desktop | 31 of 31 | 31 of 31 |
 | free heap after 31 sentences | unchanged from boot | no heap at all |
 

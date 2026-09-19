@@ -5,7 +5,7 @@ built from [examples/smart_home.yaml](../examples/smart_home.yaml).
 
 All of them build with `-DENLU_FAST_EXP`, which does the two exponentials in the CRF
 forward pass in single precision. On the Cortex-M33, which has no hardware double, that
-flag is worth 2.7 times for identical answers.
+flag is worth 2.6 times for identical answers.
 
 ## ESP32 with a round display
 
@@ -47,6 +47,8 @@ make voice-model && make voice-flash && .venv/bin/python demo/voice/listen.py
 Five commands played out loud into the room were all understood, 795 to 1,099 milliseconds
 from the last sound to the answer, of which 44 milliseconds was the two boards and the rest
 was Vosk deciding the sentence had ended. The audio link lost no packets in 30 seconds.
+Those were measured on the format 1 blob and are not re-measured here; the parse inside
+that 44 milliseconds is now 2.5 to 8.5 milliseconds instead of 2.3 to 7.9.
 
 The limit of this demo: Hinglish cannot be spoken to it at all. Vosk's English models have
 no entry for 152 of the 481 words in the smart home file, and a word outside a

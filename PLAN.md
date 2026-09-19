@@ -66,17 +66,19 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   reading the same float16 weights and 2.3e-04 against Python's own float32. Mean 7.5 microseconds
   a sentence on an M1 MacBook Air. Blob 205 KB for the smart home model, 263 KB for the robot one.
   The format is in `docs/model-format.md`.
-- [x] **M3**: ESP32 demo with the round display and the "did you mean" screen. On a classic ESP32,
-  540,632 bytes of flash (41% of the app partition), 40,828 bytes of static RAM, 310,552 bytes of
-  heap left, and 2,537 to 6,534 microseconds a sentence, mean 4,376. All 31 board sentences matched
-  the desktop C tool and Python. Numbers in `demo/esp32_round/board-results.md`. The screen drawing
-  is untested by eye.
+- [x] **M3**: ESP32 demo with the round display and the "did you mean" screen. Re-measured on the
+  format 2 blob: 588,492 bytes of flash (44% of the app partition), 40,884 bytes of static RAM,
+  310,496 bytes of heap left, and 2,995 to 7,866 microseconds a sentence, mean 5,106. All 31 board
+  sentences matched the desktop C tool and Python. On the format 1 blob it was 540,632 bytes of
+  flash, 40,828 of static RAM and a mean of 4,376. Numbers in
+  `demo/esp32_round/board-results.md`. The screen drawing is untested by eye.
 - [x] **M3b**: a second chip, to prove the runtime is portable and not quietly written for the
-  ESP32. An NXP FRDM-MCXN236, Arm Cortex-M33 at 150 MHz, bare metal, no RTOS: 241,352 bytes of
-  flash (23%), 20,976 bytes of static RAM, and 2,318 to 7,873 microseconds a sentence, mean 4,805.
-  The same 31 sentences, all 31 matching the desktop C tool with the confidence identical to six
-  decimals. Nothing in `runtime/` had to change and the build is warning free. Numbers in
-  `demo/nxp_mcxn236/board-results.md`.
+  ESP32. An NXP FRDM-MCXN236, Arm Cortex-M33 at 150 MHz, bare metal, no RTOS. Re-measured on the
+  format 2 blob: 289,064 bytes of flash (28%), 21,032 bytes of static RAM, and 2,524 to 8,455
+  microseconds a sentence, mean 5,129, against 241,352 bytes of flash and a mean of 4,805 on the
+  format 1 blob. The same 31 sentences, all 31 matching the desktop C tool with the confidence
+  identical to six decimals. Nothing in `runtime/` had to change and the build is warning free.
+  Numbers in `demo/nxp_mcxn236/board-results.md`.
 - [x] **M3c**: a voice demo across both boards at once. The FRDM-MCXN236 streams its microphone
   at 16 kHz over the MCU-Link serial port at 1 Mbaud, framed, with 0 lost packets in a 30 second
   counter test and 3 times the headroom the audio needs; the Mac runs Vosk against a word list
@@ -160,10 +162,11 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   for the robot one, up from 205 KB and 263 KB before the extra sentences widened the vocabulary
   and the gate added about 4 KB of training word hashes.
   The Python bundle, which keeps float32 weights, is 504 KB and 543 KB.
-- Under 10 ms per command on a classic ESP32. **Met**: 2.5 to 6.5 ms over 31 sentences, mean
-  4.4 ms, timed around the parse alone on the real board. Met on an Arm Cortex-M33 too, at
-  2.3 to 7.9 ms, mean 4.8 ms. On a laptop the bigger models cost 7.5 and 5.7 microseconds a
-  sentence, against 6.6 before, so the board numbers should barely move.
+- Under 10 ms per command on a classic ESP32. **Met**: 3.0 to 7.9 ms over 31 sentences, mean
+  5.1 ms, timed around the parse alone on the real board with the format 2 blob. Met on an Arm
+  Cortex-M33 too, at 2.5 to 8.5 ms, mean 5.1 ms. The wider vocabulary and the unknown word lookup
+  cost both boards about 0.5 ms of the mean, and the slowest sentence on the M33 is now 8.5 ms,
+  which is the least room this target has had.
 - Over 95% intent accuracy on held-out phrasing the model has not seen. **Not met, much closer**:
   86.8% on the smart home held-out file and 72.4% on the robot one, from 77% and 43%.
 - The unsure path catches most of the answers that would have been wrong. **Met on the robot,
