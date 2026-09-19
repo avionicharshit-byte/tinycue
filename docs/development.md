@@ -5,13 +5,19 @@ Python 3.10 or newer. Using [uv](https://docs.astral.sh/uv/):
 ```sh
 uv venv --python 3.12
 uv pip install -e ".[dev]"
-.venv/bin/pytest -q          # 338 tests, about 18 seconds
+.venv/bin/pytest -q          # 357 tests, about 18 seconds
 ```
 
 The test suite includes a full train on a small dataset and the C parity run, which builds
 the runtime with `cc` and skips cleanly when no C compiler is installed. A test also fails
 the build if a domain word from either example spec ever appears in `src/edgenlu`, so the
 Python package stays free of any knowledge of the examples.
+
+Two more guards worth knowing about. `tests/test_packaging.py` builds a wheel and checks
+the language files, the starter templates and the two C runtime sources are inside it; it
+uses hatchling in process when it is installed, falls back to `uv build`, and skips when
+neither is here. `tests/test_arduino_library.py` fails when the copies in
+`arduino/EdgeNLU/src` drift from `runtime/`, which `make arduino-sync` fixes.
 
 ## The desktop C command line tool
 
@@ -40,6 +46,9 @@ number.
 | `make demo-sync` | copy the runtime and the exported model into the ESP32 sketch |
 | `make demo-build` | compile the ESP32 sketch with `arduino-cli` |
 | `make demo-flash` | compile and upload the ESP32 sketch |
+| `make arduino-sync` | copy the runtime into the Arduino library at `arduino/EdgeNLU/src` |
+| `make arduino-example-model` | rebuild the model the Arduino example carries |
+| `make arduino-build` | compile the Arduino example against the library |
 | `make nxp-build` | build the FRDM-MCXN236 demo |
 | `make nxp-flash` | build and flash the FRDM-MCXN236 demo |
 | `make voice-model` | download and unpack the Vosk model into `.cache/vosk` |

@@ -23,8 +23,17 @@ measured and it works, but the APIs and the model format may still change.
 
 ## Thirty seconds with it
 
+```sh
+pip install "git+https://github.com/avionicharshit-byte/edge-nlu"   # not on PyPI yet
+edgenlu init coffee
+```
+
+`init` writes three commented starter files for a toy coffee machine, so there is
+something that trains and answers before you have invented anything. The whole path,
+install to a compiled device folder, is in [docs/install.md](docs/install.md).
+
 You write the commands and the words people use for them, with slot spans marked
-`[surface text](slot_name)`.
+`[surface text](slot_name)`. This is the smart home example that ships:
 
 ```yaml
 language: [en, hinglish]
@@ -48,20 +57,20 @@ commands:
 Then three commands, and you can read sentences:
 
 ```sh
-.venv/bin/edgenlu check examples/smart_home.yaml
-.venv/bin/edgenlu train examples/smart_home.yaml --extra examples/smart_home.extra.yaml \
+edgenlu check examples/smart_home.yaml
+edgenlu train examples/smart_home.yaml --extra examples/smart_home.extra.yaml \
     --dev examples/smart_home.dev.yaml -n 1500 --seed 0 -o out/model
-.venv/bin/edgenlu export out/model -o out/device
+edgenlu export out/model -o out/device --with-runtime
 ```
 
 ```
-$ .venv/bin/edgenlu parse out/model "turn on the bedroom light"
+$ edgenlu parse out/model "turn on the bedroom light"
 set_light(state=on, room=bedroom) confidence=1.00
-$ .venv/bin/edgenlu parse out/model "rasoi mein light jala do"
+$ edgenlu parse out/model "rasoi mein light jala do"
 set_light(room=kitchen, state=on) confidence=0.99
-$ .venv/bin/edgenlu parse out/model "i am a big fan of cricket"
+$ edgenlu parse out/model "i am a big fan of cricket"
 unsure (best guess: none confidence=0.84)
-$ .venv/bin/edgenlu parse out/model "flick the bedroom lamp on"
+$ edgenlu parse out/model "flick the bedroom lamp on"
 set_light(room=bedroom, state=on) confidence=0.95
 ```
 
@@ -119,8 +128,9 @@ worth, and what they measured: [docs/demos.md](docs/demos.md).
 
 ## Use it in your firmware
 
-Copy `runtime/edgenlu.h` and `runtime/edgenlu.c` into your project along with the
-`model_data.c` and `model_data.h` that `edgenlu export` wrote. Nothing else to link.
+`edgenlu export --with-runtime` leaves four files in one folder: `edgenlu.h`, `edgenlu.c`
+and the `model_data.c` and `model_data.h` it wrote. Add the `.c` files to your build.
+Nothing else to link, and nothing else to clone.
 
 ```c
 #include <stdio.h>
@@ -155,6 +165,11 @@ void nlu_handle(const char *sentence)   /* once per sentence */
 Both calls return a negative code on refusal, which `enlu_error` turns into text. Nothing
 after `enlu_init` allocates or opens a file, and `make cli` builds the same runtime for the
 desktop.
+
+For Arduino there is a library at [arduino/EdgeNLU](arduino/EdgeNLU), not in the registry
+yet, so copy the folder into your sketchbook. Its **SerialCommands** example needs no
+display and carries the starter model: 353,252 bytes of flash and 35,004 of RAM on a
+classic ESP32, 171,104 and 57,448 on an Arduino Nano 33 BLE. An 8 bit AVR cannot build it.
 
 ## Accuracy and limits
 
@@ -212,15 +227,19 @@ and honest enough about its own confidence to refuse.
 2. ~~**An unsure cut-off that holds up on wording nobody wrote.**~~ Done. The blob carries
    the training vocabulary, the device counts the words it has never seen, and a handful of
    fitted weights turn that into the confidence.
-3. **Packaging.** A pip install, and an Arduino library the runtime drops straight into.
-4. **Public release.** A name that is not a working name, and a first tagged version.
+3. ~~**Packaging.** A pip install, and an Arduino library the runtime drops straight
+   into.~~ Done. The wheel carries the language files and the C runtime, `edgenlu init`
+   writes a starter device, `export --with-runtime` leaves a folder that compiles alone,
+   and [arduino/EdgeNLU](arduino/EdgeNLU) is the library.
+4. **Public release.** A name that is not a working name, a demo video, a first tagged
+   version, and then PyPI and the Arduino library registry.
 
 ## Development
 
 Python 3.10 or newer, [uv](https://docs.astral.sh/uv/) for the virtual environment, `make`
-for the C side. Setup, the tests and the make targets are in
-[docs/development.md](docs/development.md); [PLAN.md](PLAN.md) has the milestone history
-and the open questions.
+for the C side. Installing it to use it is [docs/install.md](docs/install.md); setup, the
+tests and the make targets are in [docs/development.md](docs/development.md);
+[PLAN.md](PLAN.md) has the milestone history and the open questions.
 
 ## Credits and licence
 

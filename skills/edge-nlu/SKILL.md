@@ -23,9 +23,13 @@ sentences, not from a bigger model.** That is the job.
 ## Install
 
 ```bash
-git clone https://github.com/avionicharshit-byte/edge-nlu && cd edge-nlu
-python3 -m venv .venv && .venv/bin/pip install -e .
+pip install "git+https://github.com/avionicharshit-byte/edge-nlu"    # not on PyPI yet
+edgenlu init camera                                                  # starter files to edit
 ```
+
+`init` writes `camera.yaml`, `camera.extra.yaml` and `camera.dev.yaml` for a toy device,
+each commented. Rewrite them for the user's device rather than starting from a blank file.
+The wheel carries the C runtime too, so nothing has to be cloned.
 
 ## The workflow
 
@@ -142,12 +146,13 @@ round away** rather than piling more on top. Three or four rounds is normal.
 
 ```bash
 edgenlu train camera.yaml --extra camera.extra.yaml --dev camera.dev.yaml -o out/model
-edgenlu export out/model -o out/device
+edgenlu export out/model -o out/device --with-runtime
 ```
 
-`out/device` holds `model.bin` plus `model_data.c` and `model_data.h`, the same bytes as
-a C array. Copy `runtime/edgenlu.c`, `runtime/edgenlu.h` and those two files into the
-firmware. No dependencies beyond libm.
+`out/device` then holds `model.bin`, `model_data.c` and `model_data.h`, the same bytes as
+a C array, plus `edgenlu.c` and `edgenlu.h` copied out of the installed package. Add the
+`.c` files to the firmware build. No dependencies beyond libm. For Arduino, the library is
+`arduino/EdgeNLU` in the repository.
 
 ```c
 #include "edgenlu.h"
@@ -173,7 +178,8 @@ acts on an unsure answer is worse than one that asks.
 | `edgenlu train FILE [--extra F] [--dev F] [-n 1500] [--cutoff-target 0.97] -o DIR` | train, calibrate, save |
 | `edgenlu doctor FILE [--extra F] --dev F [--json]` | train and say where it is weak |
 | `edgenlu eval DIR --data FILE [--summary]` | measure on a held-out set |
-| `edgenlu export DIR -o DIR` | write `model.bin` and the C arrays |
+| `edgenlu init NAME` | write a starter commands file, extra file and dev file |
+| `edgenlu export DIR -o DIR [--with-runtime]` | write `model.bin`, the C arrays and, with the flag, the runtime |
 | `edgenlu parse DIR "sentence"` | try one sentence on the desktop |
 | `edgenlu generate FILE -n 200` | dump the training sentences as JSON lines |
 

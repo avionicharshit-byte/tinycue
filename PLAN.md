@@ -154,6 +154,47 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   seen the training sentences and which nothing was fitted on, the accepted answers are
   right 98.1% and 98.2% of the time with 22.3% and 19.6% going to unsure. Every variant
   that was scored is in `docs/accuracy.md`.
+- [x] **M3f**: packaging, so somebody who is not us can install it and get to a working
+  device without cloning anything.
+
+  The Python side. `pip install "git+https://github.com/avionicharshit-byte/edge-nlu"`
+  gives a working `edgenlu` command. The wheel carries the language word lists, the
+  starter templates and both C runtime sources, the last force-included from `runtime/`
+  at build time so there is one copy in git and never two that can drift.
+  `edgenlu export --with-runtime` copies `edgenlu.h` and `edgenlu.c` out of the installed
+  package next to the model, which makes the exported folder the whole device side.
+  `edgenlu init NAME` writes three commented starter files for a toy coffee machine, a
+  domain that is neither example, so the domain-free guard still holds. `edgenlu --version`
+  and full metadata in `pyproject.toml`.
+
+  Proved, not assumed: a wheel built with `uv build`, installed into a throwaway venv
+  outside the repo, then `init`, `check`, `train` (3.3 s), `parse` on four sentences and
+  `export --with-runtime` run from an empty folder. The exported folder plus a 15 line
+  main compiled with `cc -std=c99 -Wall -Wextra -pedantic` with no warnings and answered
+  `brew confidence 0.99 unsure 0`. `tests/test_packaging.py` builds a wheel and checks the
+  language files, the templates and the runtime sources are in it.
+
+  The Arduino side. `arduino/EdgeNLU/` is a standard library: `library.properties`,
+  `keywords.txt`, the runtime under `src/` and a board-agnostic `SerialCommands` example
+  with the starter model as `model_data.c`. The runtime copies are committed rather than
+  synced, because a ZIP download of the repo has to work, so
+  `tests/test_arduino_library.py` fails when they drift from `runtime/` and
+  `make arduino-sync` fixes it. `make arduino-example-model` rebuilds the example model.
+
+  Measured with `arduino-cli 1.5.1`: the example builds for `esp32:esp32:esp32` at
+  353,252 bytes of flash (26%) and 35,004 bytes of RAM (10%), and for
+  `arduino:mbed_nano:nano33ble` at 171,104 bytes (17%) and 57,448 bytes (21%). It does
+  **not** build for `arduino:avr:mega`: `size of array is too large`, because the model
+  array is past what 8 bit AVR can address, and its 8 KB of SRAM could not hold the
+  scratch buffer either. The realistic minimum is a 32 bit MCU with about 300 KB of free
+  flash and 12 KB of RAM.
+
+  No wrapper header named `EdgeNLU.h` ships. The runtime header is `edgenlu.h` and macOS
+  filesystems are case insensitive, so the two cannot sit in the same folder. Sketches
+  include `<edgenlu.h>`, which already carries its own `extern "C"` guards.
+
+  Nothing was published: not PyPI, not the Arduino library registry, and the repository
+  is still private.
 - [ ] **M4**: README, a Hinglish example pack, and the first release.
 
 ## Numbers to aim for
