@@ -50,7 +50,7 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
 - Python 3, python-crfsuite and scikit-learn for the training side.
 - CRFsuite and liblbfgs C sources from upstream, vendored so the device runtime has no
   dependencies.
-- A classic ESP32 and a Raspberry Pi as the test boards.
+- A classic ESP32, an Arm Cortex-M33 board and a Raspberry Pi as the test boards.
 - Our own hand-written example sentences, in English and Hinglish.
 - No GPU and no money.
 
@@ -71,6 +71,12 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   heap left, and 2,537 to 6,534 microseconds a sentence, mean 4,376. All 31 board sentences matched
   the desktop C tool and Python. Numbers in `demo/esp32_round/board-results.md`. The screen drawing
   is untested by eye.
+- [x] **M3b**: a second chip, to prove the runtime is portable and not quietly written for the
+  ESP32. An NXP FRDM-MCXN236, Arm Cortex-M33 at 150 MHz, bare metal, no RTOS: 241,352 bytes of
+  flash (23%), 20,976 bytes of static RAM, and 2,318 to 7,873 microseconds a sentence, mean 4,805.
+  The same 31 sentences, all 31 matching the desktop C tool with the confidence identical to six
+  decimals. Nothing in `runtime/` had to change and the build is warning free. Numbers in
+  `demo/nxp_mcxn236/board-results.md`.
 - [ ] **M4**: README, a Hinglish example pack, and the first release.
 
 ## Numbers to aim for
@@ -78,7 +84,8 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
 - Model file under 1 MB. **Met**: the device blob is 205 KB for the smart home example and 263 KB
   for the robot one. The Python bundle, which keeps float32 weights, is 305 KB and 376 KB.
 - Under 10 ms per command on a classic ESP32. **Met**: 2.5 to 6.5 ms over 31 sentences, mean
-  4.4 ms, timed around the parse alone on the real board.
+  4.4 ms, timed around the parse alone on the real board. Met on an Arm Cortex-M33 too, at
+  2.3 to 7.9 ms, mean 4.8 ms.
 - Over 95% intent accuracy on held-out phrasing the model has not seen. **Not met**: 77% on the
   smart home held-out file and 43% on the robot one.
 - The unsure path catches most of the answers that would have been wrong. **Half met**: 95% on the

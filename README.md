@@ -7,9 +7,10 @@ a model file under 1 MB, small enough for an ESP32 or a Raspberry Pi, with Engli
 support.
 
 Status: milestone M3. The commands file parser, the example generator, training, calibration, the
-command line, the C99 device runtime and an ESP32 demo all work. The C runtime is proved against
-Python on 842 sentences, and the demo runs on a real ESP32 with a round display, offline, in about
-4.4 milliseconds a sentence. See [PLAN.md](PLAN.md) for what is left.
+command line, the C99 device runtime and two board demos all work. The C runtime is proved against
+Python on 842 sentences, and it runs offline on a classic ESP32 and on an Arm Cortex-M33, in under
+5 milliseconds a sentence on both, with the same source file and no chip specific code. See
+[PLAN.md](PLAN.md) for what is left.
 
 ![How edge-nlu works](diagrams/edge-nlu-flow.png)
 
@@ -109,7 +110,30 @@ int enlu_parse(const enlu_model *model, const char *text, enlu_result *out,
 required slots that were left out, the confidence and its two halves, and an `unsure` flag. The
 best guess is filled in even when the answer is unsure.
 
-## The ESP32 demo
+## Boards tested
+
+Both boards ran the same 31 sentences, the same smart home model and the same `runtime/edgenlu.c`.
+Every answer matched the desktop C tool: the same command, slot values, missing slots and unsure
+flag, and on the Cortex-M33 the confidence was identical to all six printed decimals.
+
+| | classic ESP32 | NXP FRDM-MCXN236 |
+| --- | --- | --- |
+| core | Xtensa LX6, 240 MHz | Arm Cortex-M33, 150 MHz |
+| build | Arduino sketch, round display | bare metal, no RTOS |
+| flash image | 540,632 bytes | 241,352 bytes |
+| static RAM | 40,828 bytes | 20,976 bytes |
+| model blob, in flash | 209,640 bytes | 209,640 bytes |
+| scratch buffer | 10,712 bytes | 10,712 bytes |
+| parse, fastest | 2,537 us | 2,318 us |
+| parse, mean | 4,376 us | 4,805 us |
+| parse, slowest | 6,534 us | 7,873 us |
+| sentences matching the desktop | 31 of 31 | 31 of 31 |
+
+The two flash numbers are not the same measurement: the ESP32 image carries the Arduino core and
+the display library, the MCXN236 one carries four NXP drivers. Both boards are timed around
+`enlu_parse` alone, on the board, with `-DENLU_FAST_EXP`.
+
+### The ESP32 demo
 
 [demo/esp32_round](demo/esp32_round) runs the smart home model on a classic ESP32 with a 1.28 inch
 round GC9A01 display. It reads a sentence from USB serial, answers with one JSON line, and draws
@@ -121,10 +145,26 @@ make demo-flash     # copy the runtime in, build and upload
 .venv/bin/python demo/send.py "turn on the bedroom light"
 ```
 
-What it measured on the real board is in
-[demo/esp32_round/board-results.md](demo/esp32_round/board-results.md): 540,632 bytes of flash
-(41% of the app partition), 40,828 bytes of static RAM, 310,552 bytes of heap left, and 2.5 to
-6.5 milliseconds a sentence. The screen drawing has not been checked by eye.
+Full numbers in [demo/esp32_round/board-results.md](demo/esp32_round/board-results.md). The screen
+drawing has not been checked by eye.
+
+### The Cortex-M33 demo
+
+[demo/nxp_mcxn236](demo/nxp_mcxn236) is the portability proof: the same runtime on an NXP
+FRDM-MCXN236, bare metal, flashed with pyOCD over the on-board debug probe. No line of
+`runtime/edgenlu.c` was changed for it, and the build is warning free. It answers on the debug
+serial port and lights the red LED when the answer is unsure.
+
+```sh
+make model                        # train and export
+make nxp-flash                    # copy the runtime in, build and flash
+.venv/bin/python demo/send.py -p /dev/cu.usbmodem<probe>3 "turn on the bedroom light"
+```
+
+Full numbers in [demo/nxp_mcxn236/board-results.md](demo/nxp_mcxn236/board-results.md). The M33
+has a single precision FPU only, so `-DENLU_FAST_EXP`, which does the two exponentials in the CRF
+forward pass in single precision, is worth 2.7 times there: 4,805 microseconds a sentence with it
+and 12,943 without, for the same answers to six decimals.
 
 ## What it does today
 
