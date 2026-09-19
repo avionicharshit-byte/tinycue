@@ -167,7 +167,7 @@
     - "let it fall"
     - "chhod do ab"
     - "neeche rakh do ise"
-    - "haath khol do"
+    - "apna haath khol do"
     - "gripper ko kholo"
 
 - answer: set_speed(rate=fast)

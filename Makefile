@@ -2,6 +2,8 @@
 PYTHON ?= .venv/bin/python
 EDGENLU ?= .venv/bin/edgenlu
 SPEC ?= examples/smart_home.yaml
+EXTRA ?= examples/smart_home.extra.yaml
+DEV ?= examples/smart_home.dev.yaml
 MODEL ?= out/model
 DEVICE ?= out/device
 SKETCH ?= demo/esp32_round
@@ -14,10 +16,16 @@ PORT ?= /dev/cu.usbserial-0001
 cli:
 	$(MAKE) -C runtime
 
-# Train the example model and export it for the device.
+# Train the example model and export it for the device. The extra sentences are what
+# the model actually learns from; the dev file fits the confidence and the cut-off and
+# is never trained on.
 model:
-	$(EDGENLU) train $(SPEC) -n 1500 --seed 0 -o $(MODEL)
+	$(EDGENLU) train $(SPEC) --extra $(EXTRA) --dev $(DEV) -n 1500 --seed 0 -o $(MODEL)
 	$(EDGENLU) export $(MODEL) -o $(DEVICE)
+
+# What to write next: per command accuracy, confusions and unknown words.
+doctor:
+	$(EDGENLU) doctor $(SPEC) --extra $(EXTRA) --dev $(DEV)
 
 # Copy the runtime and the exported model into the sketch folder. The copies are build
 # output, not source, so they are not in git. Run this before building the demo.
@@ -68,5 +76,5 @@ clean:
 	$(MAKE) -C $(VOICE_FW) clean
 	rm -f $(SKETCH)/edgenlu.c $(SKETCH)/edgenlu.h $(SKETCH)/model_data.c $(SKETCH)/model_data.h
 
-.PHONY: cli model demo-sync demo-build demo-flash nxp-build nxp-flash \
+.PHONY: cli model doctor demo-sync demo-build demo-flash nxp-build nxp-flash \
         voice-model voice-build voice-flash test clean
