@@ -59,9 +59,12 @@ def typo(rng: random.Random, word: str) -> str:
         return word[:index] + word[index + 1 :]
     if kind == 1:
         return word[:index] + word[index] + word[index:]
-    if kind == 2:
+    if kind == 2 and word[index] != word[index + 1]:
         return word[:index] + word[index + 1] + word[index] + word[index + 2 :]
-    return word[:index] + rng.choice(CONSONANTS) + word[index + 1 :]
+    letter = rng.choice(CONSONANTS)
+    while letter == word[index]:
+        letter = rng.choice(CONSONANTS)
+    return word[:index] + letter + word[index + 1 :]
 
 
 def _carriers(tags) -> list[int]:

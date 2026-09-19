@@ -348,3 +348,76 @@ def test_a_surface_taught_by_an_extra_file_reaches_the_c_blob(cli, tmp_path):
     assert compare(reply, want) is None
     assert reply["command"] == "set_fan"
     assert reply["slots"] == {"room": "bedroom", "speed": "up"}
+
+
+def test_the_blob_carries_the_training_vocabulary_sorted(models):
+    """The device answers 'has the model ever seen this word' with a binary search."""
+    import struct
+
+    for name in models:
+        model = models[name]["model"]
+        blob = models[name]["blob"].read_bytes()
+        section = _section(blob, 6)
+        count = struct.unpack_from("<I", section, 0)[0]
+        at = struct.unpack_from("<I", section, 4)[0]
+        hashes = list(struct.unpack_from(f"<{count}I", section, at))
+        assert count == len(set(model.vocabulary)), name
+        assert hashes == sorted(hashes), name
+        assert len(set(hashes)) == count, name
+
+
+def test_the_blob_carries_the_gate_weights(models):
+    import struct
+
+    for name in models:
+        model = models[name]["model"]
+        assert model.calibrator is not None, name
+        section = _section(models[name]["blob"].read_bytes(), 6)
+        count = struct.unpack_from("<I", section, 8)[0]
+        ids_at = struct.unpack_from("<I", section, 12)[0]
+        weights_at = struct.unpack_from("<I", section, 16)[0]
+        bias = struct.unpack_from("<f", section, 20)[0]
+        assert count == len(model.calibrator.weights), name
+        assert list(struct.unpack_from(f"<{count}I", section, ids_at)) == list(
+            model.calibrator.feature_ids
+        ), name
+        weights = list(struct.unpack_from(f"<{count}f", section, weights_at))
+        assert weights == pytest.approx(model.calibrator.weights), name
+        assert bias == pytest.approx(model.calibrator.bias), name
+
+
+def test_a_gate_weight_naming_a_signal_that_does_not_exist_is_refused(models):
+    import copy
+
+    from edgenlu.export import ExportError
+
+    model = copy.copy(models["smart_home"]["model"])
+    model.calibrator = copy.copy(model.calibrator)
+    model.calibrator.feature_ids = [99]
+    model.calibrator.weights = [1.0]
+    with pytest.raises(ExportError, match="no slot for"):
+        build_blob(model)
+
+
+def _section(blob: bytes, wanted: int) -> bytes:
+    """One section of a blob, found the way the C runtime finds it."""
+    import struct
+
+    count = struct.unpack_from("<I", blob, 12)[0]
+    for index in range(count):
+        identifier, offset, length, _ = struct.unpack_from("<4I", blob, 32 + index * 16)
+        if identifier == wanted:
+            return blob[offset : offset + length]
+    raise AssertionError(f"no section {wanted} in the blob")
+
+
+def test_an_unknown_word_shows_up_on_both_sides(cli, models):
+    """The whole point of the vocabulary: the device can say 'I have never seen that'."""
+    for name in models:
+        text = "quorbek fimnaz durvel"
+        reply = run_c(cli, models[name]["blob"], [text])[0]
+        want = run_python(half_model(models[name]["model"]), text)
+        assert reply["unknown"] == 3, name
+        assert reply["unknown"] == want["unknown"], name
+        assert reply["all_carrier_unknown"] is True, name
+        assert compare(reply, want) is None, name

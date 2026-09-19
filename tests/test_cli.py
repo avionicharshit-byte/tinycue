@@ -130,3 +130,48 @@ def test_parse_an_out_of_scope_sentence(cli_model, capsys):
 def test_parse_rejects_an_empty_sentence(cli_model, capsys):
     assert main(["parse", str(cli_model), "   "]) == 1
     assert "error:" in capsys.readouterr().err
+
+
+def test_parse_as_json_carries_the_gate_evidence(cli_model, capsys):
+    assert main(["parse", str(cli_model), "--json", "turn on the bedroom light"]) == 0
+    reply = json.loads(capsys.readouterr().out)
+    assert reply["command"]
+    for key in ("confidence", "intent", "slot", "margin", "unknown", "unknown_share"):
+        assert key in reply
+    assert reply["unknown"] == 0
+    assert reply["unknown_share"] == 0.0
+
+
+def test_a_sentence_of_words_from_nowhere_is_all_unknown(cli_model, capsys):
+    assert main(["parse", str(cli_model), "--json", "quorbek fimnaz durvel"]) == 0
+    reply = json.loads(capsys.readouterr().out)
+    assert reply["unknown"] == 3
+    assert reply["unknown_share"] == 1.0
+    assert reply["all_carrier_unknown"] is True
+    assert reply["unsure"] is True
+
+
+def test_eval_reads_an_answer_first_file(cli_model, tmp_path, capsys):
+    """The value-level path: no spans, so a wording nobody listed still counts."""
+    data = tmp_path / "answers.yaml"
+    data.write_text(
+        "- answer: set_light(room=bedroom, state=on)\n"
+        "  say:\n"
+        "    - illuminate the boudoir\n"
+        "    - switch the bedroom light on\n"
+        "- answer: none\n"
+        "  say:\n"
+        "    - i am reading a book\n",
+        encoding="utf-8",
+    )
+    assert main(["eval", str(cli_model), "--data", str(data), "--summary"]) == 0
+    out = capsys.readouterr().out
+    assert "3 sentences" in out
+    assert "slot f1 (value)" in out
+
+
+def test_eval_on_a_marked_up_file_still_scores_spans(cli_model, capsys):
+    from conftest import HELDOUT_FILE
+
+    assert main(["eval", str(cli_model), "--data", str(HELDOUT_FILE), "--summary"]) == 0
+    assert "slot f1 (span)" in capsys.readouterr().out

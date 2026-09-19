@@ -241,3 +241,58 @@ def test_a_commands_file_can_list_its_own_extra_files(tmp_path):
     assert spec.extra_files == [str(tmp_path / "more.yaml")]
     answers.apply(spec, answers.load(spec.extra_files, spec))
     assert any(e.text == "crank it up" for e in spec.command("set_fan").examples)
+
+
+# ---------------------------------------------------------------- answers only
+
+UNKNOWN_WORDING = (
+    "- answer: set_light(room=bedroom, state=on)\n"
+    "  say:\n"
+    "    - illuminate the boudoir\n"
+)
+
+
+def test_the_strict_loader_refuses_a_wording_it_cannot_place(example_spec, write_extra):
+    path = write_extra(UNKNOWN_WORDING)
+    with pytest.raises(SpecError, match="no words in the sentence say it"):
+        load(example_spec, path, register=False)
+
+
+def test_the_answers_only_loader_keeps_that_sentence(example_spec, write_extra):
+    """A set written by somebody who never saw the commands file is full of these."""
+    path = write_extra(UNKNOWN_WORDING)
+    examples = answers.load_answers([path], example_spec)
+    assert len(examples) == 1
+    example = examples[0]
+    assert example.command == "set_light"
+    assert example.slots == {"room": "bedroom", "state": "on"}
+    assert example.tokens == ["illuminate", "the", "boudoir"]
+    assert set(example.tags) == {"O"}
+    assert example.labelled is False
+
+
+def test_the_answers_only_loader_teaches_the_spec_nothing(example_spec, write_extra):
+    path = write_extra(
+        "- answer: set_fan(speed=up)\n  say:\n    - '[wind it right up](speed)'\n"
+    )
+    before = {k: list(v) for k, v in example_spec.slot_types["direction"].values.items()}
+    answers.load_answers([path], example_spec)
+    assert example_spec.slot_types["direction"].values == before
+
+
+def test_markup_is_stripped_before_the_words_are_counted(example_spec, write_extra):
+    path = write_extra(
+        "- answer: set_light(room=bedroom, state=on)\n"
+        "  say:\n"
+        "    - '[bedroom](room) light [on](state)'\n"
+    )
+    example = answers.load_answers([path], example_spec)[0]
+    assert example.tokens == ["bedroom", "light", "on"]
+
+
+def test_an_answer_the_commands_file_does_not_know_is_still_an_error(
+    example_spec, write_extra
+):
+    path = write_extra("- answer: fly(speed=up)\n  say:\n    - take off\n")
+    with pytest.raises(SpecError, match="not a command"):
+        answers.load_answers([path], example_spec)

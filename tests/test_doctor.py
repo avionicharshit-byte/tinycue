@@ -228,3 +228,41 @@ def test_train_takes_a_dev_file_from_the_command_line(tmp_path, files, capsys):
     meta = json.loads((tmp_path / "model" / "meta.json").read_text(encoding="utf-8"))
     assert meta["training"]["dev_sentences"] == 7
     assert meta["training"]["extra_files"] == [str(extra)]
+
+
+def test_doctor_refuses_a_set_written_by_a_stranger(capsys):
+    """eval/stranger*.yaml picks between methods. Fitting on it spends that too."""
+    stranger = REPO_ROOT / "eval/stranger_smart_home.yaml"
+    assert main(["doctor", str(EXAMPLE_FILE), "--dev", str(stranger)]) == 1
+    assert "held-out" in capsys.readouterr().err
+
+
+def test_training_refuses_a_stranger_file_as_extra_sentences(tmp_path, capsys):
+    stranger = REPO_ROOT / "eval/stranger_robot.yaml"
+    code = main(
+        ["train", str(EXAMPLE_FILE), "--extra", str(stranger), "-o", str(tmp_path / "m")]
+    )
+    assert code == 1
+    assert "held-out" in capsys.readouterr().err
+
+
+def test_the_doctor_report_says_how_honest_the_confidence_is(files, tmp_path):
+    """The gate block is what tells a reader the cut-off is not a guess."""
+    from edgenlu import doctor as doctor_report
+    from edgenlu import model as bundle
+    from edgenlu.cli import _spec_with_extras
+    from edgenlu.train import train
+    from edgenlu import answers as answer_files
+
+    extra, dev = files
+    spec = _spec_with_extras(EXAMPLE_FILE, [extra])
+    dev_examples = answer_files.load([dev], spec, register=False)
+    out = tmp_path / "gate_model"
+    result = train(
+        spec, out, n_per_command=120, seed=0, dev_examples=dev_examples, log=lambda *a: None
+    )
+    data = doctor_report.report(spec, bundle.load(out), dev_examples, result)
+    assert "gate" in data
+    assert data["gate"]["dev"]["count"] == len(dev_examples)
+    text = "\n".join(doctor_report.lines(data))
+    assert "how honest the confidence is" in text

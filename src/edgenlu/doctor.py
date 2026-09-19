@@ -131,6 +131,12 @@ def report(spec: Spec, model, dev_examples, result, cutoff: float | None = None)
     unsure = [a for a in answers if a.confidence < cut]
     unsure_right = sum(a.full_right for a in unsure)
 
+    unknown_share = (
+        sum(a.signals.get("unknown_share", 0.0) for a in answers) / len(answers)
+        if answers
+        else 0.0
+    )
+
     out = {
         "spec": spec.source,
         "extra_files": list(spec.extra_files),
@@ -160,8 +166,63 @@ def report(spec: Spec, model, dev_examples, result, cutoff: float | None = None)
             "share": round(len(unsure) / len(answers), 4) if answers else 0.0,
             "would_have_been_right": unsure_right,
         },
+        "gate": _gate_block(result, unknown_share),
     }
     out["next"] = _next_steps(out)
+    return out
+
+
+def _gate_block(result, unknown_share: float) -> dict:
+    """How the unsure gate was built and how well it holds up on unfamiliar words."""
+    from . import gate as gate_module
+
+    calibrator = getattr(result, "calibrator", None)
+    health = dict(getattr(result, "gate_health", {}) or {})
+    return {
+        "features": (
+            [gate_module.FEATURE_NAMES[i] for i in calibrator.feature_ids]
+            if calibrator is not None
+            else []
+        ),
+        "weights": [round(float(w), 4) for w in calibrator.weights] if calibrator else [],
+        "bias": round(float(calibrator.bias), 4) if calibrator else 0.0,
+        "dev": health.get("dev", {}),
+        "stressed": health.get("stress", {}),
+        "dev_unknown_share": round(float(unknown_share), 4),
+    }
+
+
+def _gate_lines(data: dict) -> list[str]:
+    """The calibration health in plain words, for someone who has not read the code."""
+    block = data.get("gate") or {}
+    dev = block.get("dev") or {}
+    stressed = block.get("stressed") or {}
+    out: list[str] = []
+
+    if not block.get("features"):
+        out.append(
+            "the confidence is the plain product of the two probabilities, with no gate "
+            "fitted, so nothing here knows about words the model has never seen"
+        )
+        return out
+
+    out.append(
+        "the confidence is built from " + ", ".join(block["features"]) + ", "
+        f"and {block['dev_unknown_share'] * 100:.0f}% of the words in your dev set are "
+        "words no training sentence uses"
+    )
+    if dev.get("accepted_accuracy") is not None:
+        out.append(
+            f"when the model says it is sure it is right "
+            f"{dev['accepted_accuracy'] * 100:.0f}% of the time on your dev set, over the "
+            f"{dev['accepted']} of {dev['count']} sentences it accepted"
+        )
+    if stressed.get("accepted_accuracy") is not None:
+        out.append(
+            f"on the same sentences with words swapped for ones nobody has ever written "
+            f"that drops to {stressed['accepted_accuracy'] * 100:.0f}%, and it accepts "
+            f"{stressed['accepted']} of {stressed['count']} of them"
+        )
     return out
 
 
@@ -216,6 +277,16 @@ def _next_steps(data: dict) -> list[str]:
             "second-best answer."
         )
 
+    stressed = (data.get("gate") or {}).get("stressed") or {}
+    accepted = stressed.get("accepted_accuracy")
+    if accepted is not None and accepted < data["target_accepted_accuracy"]:
+        steps.append(
+            f"with unfamiliar words in them, the answers the model accepts are right "
+            f"{accepted * 100:.0f}% of the time, under the "
+            f"{data['target_accepted_accuracy'] * 100:.0f}% target. The lever is more "
+            "training sentences using more words, not a higher cut-off."
+        )
+
     if data["overall"]["accepted_accuracy"] < data["target_accepted_accuracy"]:
         steps.append(
             "accepted answers are right less often than the target, so the cut-off could "
@@ -250,6 +321,13 @@ def lines(data: dict) -> list[str]:
         f"{overall['accepted_accuracy'] * 100:.1f}% of the time, "
         f"{overall['wrong_caught'] * 100:.1f}% of wrong answers caught"
     )
+
+    gate_rows = _gate_lines(data)
+    if gate_rows:
+        out.append("")
+        out.append("how honest the confidence is")
+        for row in gate_rows:
+            out.append("  " + row)
 
     out.append("")
     out.append("per command, worst first")
