@@ -1,4 +1,4 @@
-"""The edgenlu command line: check a commands file, or generate training examples from it."""
+"""The edgenlu command line: check, generate, train, eval and parse."""
 
 from __future__ import annotations
 
@@ -8,9 +8,12 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from . import evaluate, model as bundle
+from .decode import decode
 from .generator import generate
-from .parser import load_spec
+from .parser import load_examples_file, load_spec, tokenize
 from .schema import NUMBER, SpecError
+from .train import read_jsonl, train, write_jsonl
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -29,11 +32,44 @@ def main(argv: list[str] | None = None) -> int:
     gen.add_argument("--seed", type=int, default=0, help="random seed (default 0)")
     gen.add_argument("-o", "--out", default="-", help="output file, or - for standard output")
 
+    tr = sub.add_parser("train", help="train a model bundle from a commands file")
+    tr.add_argument("file", help="path to the commands file")
+    tr.add_argument("-n", type=int, default=1500, help="examples per command (default 1500)")
+    tr.add_argument("--seed", type=int, default=0, help="random seed (default 0)")
+    tr.add_argument("-o", "--out", default="out/model", help="where to write the bundle")
+    tr.add_argument(
+        "--splits",
+        default=None,
+        help="where to write the dev and test splits (default: a 'splits' folder next to "
+        "the bundle)",
+    )
+
+    ev = sub.add_parser("eval", help="measure a bundle on a test set")
+    ev.add_argument("model", help="path to the model bundle")
+    ev.add_argument("--data", required=True, help="a .jsonl split or a hand-written .yaml set")
+    ev.add_argument(
+        "--cutoff",
+        type=float,
+        default=None,
+        help="try a cut-off of your own instead of the one in the bundle",
+    )
+    ev.add_argument("--errors", type=int, default=10, help="how many mistakes to list")
+
+    ps = sub.add_parser("parse", help="read one sentence with a trained bundle")
+    ps.add_argument("model", help="path to the model bundle")
+    ps.add_argument("text", nargs="+", help="the sentence to read")
+
     args = parser.parse_args(argv)
     try:
         if args.command == "check":
             return _check(args)
-        return _generate(args)
+        if args.command == "generate":
+            return _generate(args)
+        if args.command == "train":
+            return _train(args)
+        if args.command == "eval":
+            return _eval(args)
+        return _parse(args)
     except SpecError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -61,6 +97,10 @@ def _check(args) -> int:
         ) or "none"
         print(f"  {command.name}: {len(command.examples)} examples, slots: {slots}")
     print(f"examples: {total}")
+    print(
+        f"word lists: {len(spec.fillers)} fillers, {len(spec.droppable)} droppable, "
+        f"{len(spec.equivalents)} equivalent groups, {len(spec.none_examples)} none sentences"
+    )
     print(f"unsure below: {spec.fallback.unsure_below}, on unsure: {spec.fallback.on_unsure}")
     print(f"none command: {'on' if spec.fallback.none_command else 'off'}")
     return 0
@@ -83,6 +123,99 @@ def _generate(args) -> int:
     counts = Counter(e.command for e in examples)
     for name, count in counts.most_common():
         print(f"  {name}: {count}", file=sys.stderr)
+    return 0
+
+
+def _train(args) -> int:
+    spec = load_spec(args.file)
+    out_dir = Path(args.out)
+    result = train(spec, out_dir, n_per_command=args.n, seed=args.seed)
+
+    splits = Path(args.splits) if args.splits else out_dir.parent / "splits"
+    write_jsonl(result.split.dev, splits / "dev.jsonl")
+    write_jsonl(result.split.test, splits / "test.jsonl")
+    print(f"splits written to {splits}")
+
+    total = 0
+    print("bundle:")
+    for name, size in bundle.sizes(out_dir):
+        total += size
+        print(f"  {name}: {size / 1024:.1f} KB")
+    print(f"  total: {total / 1024:.1f} KB")
+    print(f"trained in {result.seconds:.1f} s")
+    return 0
+
+
+def _load_data(path: str, spec):
+    if str(path).endswith((".yaml", ".yml")):
+        return load_examples_file(path, spec)
+    return read_jsonl(path)
+
+
+def _eval(args) -> int:
+    loaded = bundle.load(args.model)
+    examples = _load_data(args.data, loaded.spec)
+    cutoff = args.cutoff if args.cutoff is not None else loaded.unsure_below
+    report, answers = evaluate.report(loaded, examples, cutoff=cutoff)
+
+    print(f"{args.data}: {report.count} sentences")
+    print(f"intent accuracy:       {report.intent_accuracy * 100:.1f}%")
+    print(
+        f"slot f1:               {report.slot_f1 * 100:.1f}% "
+        f"(precision {report.slot_precision * 100:.1f}%, "
+        f"recall {report.slot_recall * 100:.1f}%)"
+    )
+    print(f"full command accuracy: {report.full_accuracy * 100:.1f}%")
+    print(f"ece:                   {report.ece:.3f}")
+    print()
+    print("reliability")
+    print("  band         count   mean conf   accuracy")
+    for row in report.buckets:
+        if not row.count:
+            continue
+        print(
+            f"  {row.low:.1f} to {row.high:.1f}  {row.count:6d}      "
+            f"{row.mean_confidence:.3f}      {row.accuracy * 100:5.1f}%"
+        )
+    print()
+    cut = report.cutoff
+    print(f"cut-off:               {cut.value:.3f}")
+    print(f"sent to unsure:        {cut.unsure_rate * 100:.1f}%")
+    print(f"wrong answers caught:  {cut.wrong_caught * 100:.1f}%")
+    print(f"accepted answers right:{cut.accepted_accuracy * 100:.1f}% of {cut.accepted}")
+
+    worst = evaluate.failures(answers, args.errors)
+    if worst:
+        print()
+        print(f"worst {len(worst)} mistakes, most confident first")
+        for item in worst:
+            sentence = " ".join(item.example.tokens)
+            print(f"  [{item.confidence:.2f}] {sentence}")
+            print(f"        {evaluate.why(item)}")
+    return 0
+
+
+def _parse(args) -> int:
+    loaded = bundle.load(args.model)
+    tokens = tokenize(" ".join(args.text))
+    if not tokens:
+        print("error: nothing to read", file=sys.stderr)
+        return 1
+
+    probabilities = loaded.intent_probabilities(tokens)
+    best = int(probabilities.argmax())
+    command = loaded.classes[best]
+    tags, slot_probability = loaded.tag(tokens)
+    result = decode(tokens, tags, command, loaded.spec)
+    confidence = loaded.confidence(float(probabilities[best]), slot_probability)
+
+    line = f"{result.call()} confidence={confidence:.2f}"
+    if result.missing:
+        line += f" missing: {', '.join(result.missing)}"
+    if confidence < loaded.unsure_below:
+        print(f"unsure (best guess: {line})")
+    else:
+        print(line)
     return 0
 
 
