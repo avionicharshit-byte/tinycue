@@ -31,7 +31,7 @@ and you change all three.
 | at | type | what |
 | --- | --- | --- |
 | 0 | u8[4] | `E` `N` `L` `U` |
-| 4 | u32 | format version, 1 today |
+| 4 | u32 | format version, 2 today |
 | 8 | u32 | the length of the whole blob |
 | 12 | u32 | how many sections follow |
 | 16 | u32[4] | reserved, all zero |
@@ -39,7 +39,11 @@ and you change all three.
 Then one 16 byte directory entry per section: `u32 id`, `u32 offset`, `u32 length`,
 `u32 reserved`. Entries may be in any order; a reader looks up the id it wants.
 
-Section ids: 1 strings, 2 intent, 3 tagger, 4 commands, 5 numbers.
+Section ids: 1 strings, 2 intent, 3 tagger, 4 commands, 5 numbers, 6 gate.
+
+Version 2 added the gate section and nothing else. A version 1 blob has no
+training vocabulary in it, so a version 2 runtime refuses it rather than answering
+with a confidence it cannot build.
 
 ## 1. Strings
 
@@ -108,7 +112,7 @@ algorithm in log space.
 | 0 | u32 | number of commands |
 | 4 | u32 | number of slot types |
 | 8 | f32 | the cut-off below which an answer is unsure |
-| 12 | f32 | the exponent on the tagger's probability |
+| 12 | f32 | the exponent on the tagger's probability, used only when section 6 carries no gate weights |
 | 16 | u32 | where the command records are |
 | 20 | u32 | where the command slot records are |
 | 24 | u32 | where the slot type records are |
@@ -162,6 +166,48 @@ which is how `src/edgenlu/numbers.py` holds them.
 
 Filler words are `u32` string offsets. They carry no value and are skipped while reading
 a number, which is how "ek sau bees" and "one hundred and twenty" both work.
+
+## 6. Gate
+
+Everything the "should I trust this" number needs beyond the two models.
+
+| at | type | what |
+| --- | --- | --- |
+| 0 | u32 | how many training words |
+| 4 | u32 | where the training word hashes are |
+| 8 | u32 | how many gate weights |
+| 12 | u32 | where the gate feature ids are |
+| 16 | u32 | where the gate weights are |
+| 20 | f32 | the gate bias |
+| 24 | u32 | how many signals this format defines, 8 today |
+| 28 | u32 | reserved |
+
+- **training word hashes**: `u32[count]`, FNV-1a 32 of every word the two models were
+  trained on, **sorted ascending** and deduplicated, so a reader binary searches them. A
+  word that is not here, does not read as a number and is in no slot type's word list is
+  a word the model has never seen. Two words sharing a hash would make one of them look
+  familiar; at a few thousand words in a 32 bit space that is a one in four thousand
+  chance and the cost is one word counted wrong, so no check is made.
+- **gate feature ids**: `u32[weight count]`, which signal each weight multiplies.
+- **gate weights**: `f32[weight count]`.
+
+The eight signals, in the order this format fixes, with `p` the intent probability and
+`q` the tagger's sequence probability:
+
+| id | signal |
+| --- | --- |
+| 0 | `log(p / (1 - p)) / 5`, with `p` pinned into 1e-6 to 1 - 1e-6 first |
+| 1 | `log(q) / 5`, with `q` pinned into 1e-9 to 1 first |
+| 2 | unknown words divided by all words |
+| 3 | 1 when every word carrying no slot tag is unknown, else 0 |
+| 4 | the top command's probability minus the second one's |
+| 5 | 1 when a required slot came back missing, else 0 |
+| 6 | 1 when a slot value matched nothing anybody listed, else 0 |
+| 7 | 1 when the answer is "no command", else 0 |
+
+The confidence is `1 / (1 + exp(-(bias + sum of weight times signal)))`. A blob with no
+gate weights falls back to the old `p * q ** power` from section 4. The scoring recipe,
+the divisor of 5 and the two floors are all in `src/edgenlu/gate.py`.
 
 ## What the format does not carry
 
