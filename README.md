@@ -8,7 +8,7 @@ What you get from one YAML file:
 
 - A model trained on your laptop in about 6 seconds, exported as one flat blob plus C99
   source. No malloc, no file IO, and the weights are read in place, in flash.
-- An answer in single digit milliseconds on the boards below, 7.9 microseconds on a desktop.
+- An answer in single digit milliseconds on the boards below, 6.4 microseconds on a desktop.
 - A calibrated confidence on every answer, and a tuned cut-off below which the device says
   "unsure" instead of guessing. Ask again, or hand the sentence to something bigger. The
   device counts the words of your sentence the model has never seen, and says so.

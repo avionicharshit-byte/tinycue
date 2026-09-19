@@ -5,7 +5,7 @@ Python 3.10 or newer. Using [uv](https://docs.astral.sh/uv/):
 ```sh
 uv venv --python 3.12
 uv pip install -e ".[dev]"
-.venv/bin/pytest -q          # 237 tests, about 8 seconds
+.venv/bin/pytest -q          # 338 tests, about 18 seconds
 ```
 
 The test suite includes a full train on a small dataset and the C parity run, which builds

@@ -252,13 +252,19 @@ for the smart home model and 5.14 to 4.99 for the robot one, which is inside the
 
 ## On the boards
 
-Both boards ran the same 31 sentences from `demo/esp32_round/sentences.txt`, with the
-model as it was before the gate. All 31 matched the desktop C tool on both boards, and
-on the Cortex-M33 every confidence was identical to all six printed decimals. Per-sentence
-tables are in [demo/esp32_round/board-results.md](../demo/esp32_round/board-results.md)
-and [demo/nxp_mcxn236/board-results.md](../demo/nxp_mcxn236/board-results.md).
+Both boards were reflashed with the format 2 blob on 2026-09-19 and ran the same 31
+sentences from `demo/esp32_round/sentences.txt` again. All 31 matched the desktop C tool
+on both boards, with every confidence, margin, unknown word count and carrier flag
+identical to all six printed decimals on both. Per-sentence tables are in
+[demo/esp32_round/board-results.md](../demo/esp32_round/board-results.md) and
+[demo/nxp_mcxn236/board-results.md](../demo/nxp_mcxn236/board-results.md).
 
-Those numbers are from the old blob format. Both demos still build against the new one,
-at 588,268 bytes of flash for the ESP32 sketch and 288,800 bytes of text for the NXP
-firmware, but neither board has been flashed since, so the board timings have not been
-measured again.
+The gate is not free on a small chip. The blob grew by 45,372 bytes, and the mean parse
+went from 4,376 to 5,106 microseconds on the ESP32 and from 4,805 to 5,129 on the
+Cortex-M33, which is the wider vocabulary and the unknown word lookup. Seven of the 31
+sentences now go to unsure where five did, and the one confident wrong answer in the old
+tables is caught.
+
+The NXP board is left running the voice firmware, which carries the same runtime and blob.
+Its text path was checked without audio over the same 31 sentences: 31 of 31 agreed with
+the desktop, while the microphone kept streaming.

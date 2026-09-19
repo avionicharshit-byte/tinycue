@@ -36,7 +36,7 @@ the JSON line now carries and the one extra line on the unsure screen.
 | slowest | 7,866 |
 
 Measured on the board with `micros()` around `enlu_parse` alone, so the serial and the
-drawing are not in it. The same model on the desktop CLI averages 7.9 microseconds. The
+drawing are not in it. The same model on the desktop CLI averages 6.4 microseconds. The
 mean is 730 microseconds slower than on the format 1 blob, which is the wider vocabulary
 and the unknown word lookup, and still well inside the 10 ms target.
 

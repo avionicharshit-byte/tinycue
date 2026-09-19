@@ -194,9 +194,9 @@ tool prints the same fields.
 Measured on the two example devices, on a classic ESP32 and an NXP Cortex-M33:
 
 - model blob 200 to 400 KB, growing with vocabulary; the budget is 1 MB
-- 2.3 to 7.9 ms per sentence on a 150 MHz Cortex-M33, mean about 4.8 ms
-- 241 KB of flash and 21 KB of static RAM for the runtime and its tables
-- 7 microseconds per sentence on a laptop
+- 2.5 to 8.5 ms per sentence on a 150 MHz Cortex-M33, mean about 5.1 ms
+- 282 KB of flash and 21 KB of static RAM for the runtime and its tables
+- 6 microseconds per sentence on a laptop
 - training takes seconds, on a CPU, with no GPU
 
 With a few hundred varied sentences, expect roughly 85% of held-out commands fully right,
