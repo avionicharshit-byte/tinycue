@@ -56,28 +56,36 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
 
 ## Milestones
 
-- **M0**: commands file format, parser and example generator.
-- **M1**: Python train and eval command line tool, with a calibration report: reliability buckets,
-  the chosen cut-off, what share of inputs go to the fallback and what share of wrong answers that
-  catches.
-- **M2**: the C99 runtime, proved bit-exact against the Python model on a desktop.
-- **M3**: ESP32 demo with the round display and the "did you mean" screen, with measured flash,
+- [x] **M0**: commands file format, parser and example generator.
+- [x] **M1**: Python train and eval command line tool, with a calibration report: reliability
+  buckets, the chosen cut-off, what share of inputs go to the fallback and what share of wrong
+  answers that catches. Measured numbers are in [README.md](README.md).
+- [ ] **M2**: the C99 runtime, proved bit-exact against the Python model on a desktop.
+  The feature definition it has to reproduce is written out in `src/edgenlu/features.py`.
+- [ ] **M3**: ESP32 demo with the round display and the "did you mean" screen, with measured flash,
   RAM and latency.
-- **M4**: README, a Hinglish example pack, and the first release.
+- [ ] **M4**: README, a Hinglish example pack, and the first release.
 
 ## Numbers to aim for
 
-- Model file under 1 MB.
-- Under 10 ms per command on a classic ESP32.
-- Over 95% intent accuracy on held-out phrasing the model has not seen.
-- The unsure path catches most of the answers that would have been wrong.
+- Model file under 1 MB. **Met**: 305 KB for the smart home example, 376 KB for the robot one.
+- Under 10 ms per command on a classic ESP32. Not measured yet, that is M3.
+- Over 95% intent accuracy on held-out phrasing the model has not seen. **Not met**: 77% on the
+  smart home held-out file and 43% on the robot one.
+- The unsure path catches most of the answers that would have been wrong. **Met**: 97% on the
+  smart home held-out file and 95% on the robot one.
 
 ## Open questions
 
 - What to call the project. `edge-nlu` is a working name only.
 - Licence. Apache-2.0 or MIT; Apache-2.0 is the safer default because of the patent grant.
-- How to handle numbers. "ten", "10" and "das" all mean the same thing, and a number slot has to
-  accept all three without the user listing them.
-- How open-vocabulary slots behave. A free-text name such as a room the user invented is not in
-  any value list, so the CRF has to tag it from context alone. How well that works, and what
-  confidence to report for it, is unknown.
+- ~~How to handle numbers.~~ Settled in M0 and widened in M1: a table of English and Hindi number
+  words covers 0 to 180 in both directions, and composed forms like "ek sau bees" work.
+- How open-vocabulary slots behave. A free-text name the user invented is not in any value list,
+  so the CRF has to tag it from context alone. Decoding passes the words straight through when the
+  value is not listed, but how often the tagger finds them, and what confidence to report, is
+  still unmeasured.
+- How to close the gap on unseen wording. M1 measured it: on hand-written held-out phrasings the
+  smart home model gets 77% of intents right and the robot model 43%, because hashed n-grams carry
+  no idea that "seize" and "grab" are related. More example sentences is the only lever we have
+  today.
