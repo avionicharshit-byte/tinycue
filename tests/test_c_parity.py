@@ -297,3 +297,39 @@ def test_a_sentence_that_is_too_long_is_refused_not_cut_short(cli, models):
     texts = [" ".join(["word"] * 60)]
     reply = run_c(cli, models["smart_home"]["blob"], texts)[0]
     assert "error" in reply
+
+
+EXTRA_SURFACE = """
+- answer: set_fan(room=bedroom, speed=up)
+  say:
+    - "bedroom fan [a notch higher](speed) please"
+    - "crank the bedroom fan [a notch higher](speed)"
+    - "[sone ka kamra](room) ka pankha [a notch higher](speed) kar do"
+"""
+
+
+def test_a_surface_taught_by_an_extra_file_reaches_the_c_blob(cli, tmp_path):
+    """A word the markup taught has to survive training, export and the device."""
+    from edgenlu import answers
+
+    spec = load_spec(EXAMPLE_FILE)
+    extra = tmp_path / "extra.yaml"
+    extra.write_text(EXTRA_SURFACE, encoding="utf-8")
+    spec.extra_files.append(str(extra))
+    answers.apply(spec, answers.load(spec.extra_files, spec, register=True))
+
+    model_dir = tmp_path / "model"
+    train(spec, model_dir, n_per_command=TRAIN_N, seed=0, log=lambda *a: None)
+    device = tmp_path / "device"
+    export(model_dir, device)
+
+    blob = (device / "model.bin").read_bytes()
+    assert b"a notch higher\x00" in blob, "the new surface never reached the blob"
+
+    loaded = bundle.load(model_dir)
+    text = "bedroom fan a notch higher please"
+    reply = run_c(cli, device / "model.bin", [text])[0]
+    want = run_python(half_model(loaded), text)
+    assert compare(reply, want) is None
+    assert reply["command"] == "set_fan"
+    assert reply["slots"] == {"room": "bedroom", "speed": "up"}
