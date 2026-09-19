@@ -111,8 +111,11 @@ Same format, 80 or more sentences, every command and `none`. **Different phrasin
 copied from the extra file.** It is never trained on, and its markup teaches the model
 nothing, so a dev sentence full of unknown words is meant to fail and be reported.
 
-The dev set is what the temperature, the tagger power and the unsure cut-off are fitted
-on. A dev set that is easier than real speech gives a cut-off that lies.
+The dev set is what the temperature, the tagger power, the gate weights and the unsure
+cut-off are fitted on. A dev set that is easier than real speech gives a cut-off that
+lies, so the trainer also fits on roughed up copies of it, with carrier words swapped for
+words nobody has ever written. That is what teaches the gate what an unfamiliar word
+costs.
 
 ### 5. Run the doctor and act on it
 
@@ -175,7 +178,16 @@ acts on an unsure answer is worse than one that asks.
 | `edgenlu generate FILE -n 200` | dump the training sentences as JSON lines |
 
 `--cutoff-target` is the share of accepted answers that must be right; the trainer picks
-the lowest cut-off that reaches it and prints the whole trade-off table.
+the lowest cut-off that reaches it on out-of-fold scores and prints the whole trade-off
+table. The default is 0.97; 0.99 catches more wrong answers and asks again more often.
+
+`edgenlu eval` reads a set written answer first as well as the older marked-up layout.
+An answer-first set is scored on the command and the slot values, not on where the spans
+fell, so a wording your commands file has never listed still counts.
+
+`edgenlu parse DIR --json "sentence"` prints the answer with the evidence behind the
+confidence, including `unknown_share`, the share of words in no training sentence. The C
+tool prints the same fields.
 
 ## What to expect
 
@@ -187,9 +199,11 @@ Measured on the two example devices, on a classic ESP32 and an NXP Cortex-M33:
 - 7 microseconds per sentence on a laptop
 - training takes seconds, on a CPU, with no GPU
 
-With a few hundred varied sentences, expect roughly 90% of held-out commands fully right
-and an unsure path that catches most of the rest. With only the dozen examples in a
-commands file, expect half that.
+With a few hundred varied sentences, expect roughly 85% of held-out commands fully right,
+an unsure path that catches 80% or more of the rest, and accepted answers right about 95%
+of the time. With only the dozen examples in a commands file, expect half that. The
+awkwarder the test set, the more goes to unsure: on a set written to be difficult that can
+be half of it.
 
 ## Common mistakes
 
@@ -199,7 +213,8 @@ commands file, expect half that.
 - **Too few `none` sentences.** Without near misses that reuse the command words, the
   device will confidently act on small talk.
 - **Testing on the final set while iterating.** Keep one set you touch twice: once for a
-  baseline, once at the end. `doctor` refuses files under `eval/` named `heldout*`.
+  baseline, once at the end. `doctor` and `train` refuse files under `eval/` named
+  `heldout*` or `stranger*`.
 - **Teaching a carrier word as a slot value.** Marking `[speed up](rate)` puts "speed"
   into the slot word list and the tagger then fires on every sentence that says "speed".
   Mark the value word, and let the carrier stay a carrier.
