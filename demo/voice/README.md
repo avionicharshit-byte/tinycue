@@ -8,7 +8,7 @@ with [Vosk](https://alphacephei.com/vosk/), offline. Only the command
 understanding runs on the chips. edge-nlu turns text into a command, slot values
 and a confidence; it is not a speech recogniser and this demo does not make it
 one. What the two chips do here is exactly what they do in the other demos: read
-a sentence, answer in under 6 milliseconds.
+a sentence, answer in under 9 milliseconds.
 
 The flow:
 
@@ -118,6 +118,16 @@ carrying the same JSON the other demos print.
 
 On an M1 MacBook Air, FRDM-MCXN236 at 150 MHz, classic ESP32, smart home model.
 
+The link, the microphone and the latency numbers below were measured with the
+format 1 blob, before the training vocabulary and the fitted gate went in. They
+are not re-measured here, and nothing about the audio path changed. What did
+change is the confidence each sentence gets, and the parse, which is now 2.5 to
+8.5 milliseconds on the NXP board instead of 2.3 to 7.9. Both firmwares were
+rebuilt against the format 2 blob and the NXP board was reflashed with it. Its
+text path was checked without audio, over the same 31 sentences the other demos
+use: 31 of 31 agreed with the desktop C tool, every confidence identical to all
+six printed decimals, while the microphone kept streaming.
+
 ### The link
 
 | | |
@@ -193,8 +203,9 @@ none missing, no resyncs after the first, and no board overruns.
 Almost all of that delay is Vosk deciding the sentence has ended. Its
 `--endpoint.rule2.min-trailing-silence` is 0.5 seconds, and the rest is decoding
 lag. The two boards together account for 44 milliseconds of the 941, and the
-parse itself for 3 to 6 of those. Lowering the trailing silence in the model's
-`conf/model.conf` is the knob if a second feels long.
+parse itself for 3 to 6 of those, 3 to 9 on the blob that ships now. Lowering
+the trailing silence in the model's `conf/model.conf` is the knob if a second
+feels long.
 
 ## The grammar
 

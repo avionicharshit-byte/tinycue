@@ -535,6 +535,14 @@ static void reply(void)
     jput_fixed6(result.intent_probability);
     jput(",\"slot\":");
     jput_fixed6(result.slot_probability);
+    jput(",\"margin\":");
+    jput_fixed6(result.intent_margin);
+    jput(",\"unknown\":");
+    jput_u32((uint32_t)result.unknown_count);
+    jput(",\"unknown_share\":");
+    jput_fixed6(result.unknown_share);
+    jput(",\"all_carrier_unknown\":");
+    jput(result.all_carrier_unknown ? "true" : "false");
     jput(",\"unsure\":");
     jput(result.unsure ? "true" : "false");
     jput(",\"micros\":");
