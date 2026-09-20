@@ -11,6 +11,15 @@ C99 runtime small enough to live in your firmware. It does not listen: it reads 
 from a recogniser ([the voice demo](demo/voice) wires one up). Early preview.
 
 <p align="center">
+  <img alt="A terminal on the left sends two sentences to a classic ESP32 with a round screen on the right, and the board answers both. &quot;turn on the bedroom light&quot; comes back as set_light with room bedroom and state on at confidence 0.997, and the screen lights green. &quot;just the time thanks&quot; comes back at confidence 0.668 with unsure true, and the screen turns amber and asks did you mean show instead of acting." src="docs/assets/board-demo.gif" width="880">
+</p>
+
+A classic ESP32 with a 1.28 inch round screen, filmed off the bench. The JSON on the left is
+what the chip sent back over the serial port, not a mock-up. Nothing in the loop is online. The
+second sentence is the one that matters: the board is only two thirds sure, so it asks instead of
+acting.
+
+<p align="center">
   <img alt="A recorded terminal session: tinycue init writes a starter coffee machine, tinycue train builds the model in about three seconds, and four sentences are parsed. &quot;make me two lattes&quot; gives brew(cups=2, drink=latte) at confidence 0.99. &quot;teen cup chai bana do&quot; gives brew(cups=3, drink=tea) at 0.98. &quot;who won the match last night&quot; gives none at 0.98. &quot;kindly cease the brewing apparatus&quot; comes back unsure, with a best guess of none at 0.83." src="docs/assets/demo.svg" width="880">
 </p>
 
