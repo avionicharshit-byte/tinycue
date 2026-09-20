@@ -11,7 +11,21 @@ flag is worth 2.6 times for identical answers.
 
 [demo/esp32_round](../demo/esp32_round). The smart home model on a classic ESP32 driving a
 1.28 inch GC9A01 panel. It reads a sentence from USB serial, answers with one JSON line,
-and draws the command on the screen with a confidence ring around the rim. No Wi-Fi.
+and draws the answer on the screen with a confidence arc around the rim. No Wi-Fi.
+
+Wiring, six lines and no backlight pin:
+
+| panel | ESP32 |
+| --- | --- |
+| SCL | GPIO 18 |
+| SDA | GPIO 23 |
+| DC | GPIO 22 |
+| CS | GPIO 5 |
+| RST | GPIO 4 |
+| VCC, GND | 3V3, GND |
+
+The screen is drawn with LVGL 9.6.0. `lv_conf.h` lives in the sketch folder and is found
+through `-DLV_CONF_INCLUDE_SIMPLE` in `build_opt.h`.
 
 ```sh
 make model && make demo-flash && .venv/bin/python demo/send.py "turn on the bedroom light"
