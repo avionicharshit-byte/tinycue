@@ -30,7 +30,7 @@ into the nearest command; the fourth leans on words no example uses, so the mode
 ## Quickstart
 
 ```sh
-pip install "git+https://github.com/avionicharshit-byte/tinycue"   # not on PyPI yet
+pip install tinycue
 tinycue init coffee
 tinycue train coffee.yaml --extra coffee.extra.yaml --dev coffee.dev.yaml -o out/model
 tinycue parse out/model "make me two lattes"

@@ -23,7 +23,7 @@ sentences, not from a bigger model.** That is the job.
 ## Install
 
 ```bash
-pip install "git+https://github.com/avionicharshit-byte/tinycue"    # not on PyPI yet
+pip install tinycue
 tinycue init camera                                                  # starter files to edit
 ```
 

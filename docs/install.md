@@ -5,10 +5,10 @@ on the device. You need the first to get the second.
 
 ## The Python tool
 
-Python 3.10 or newer. It is not on PyPI yet, so install it from git:
+Python 3.10 or newer.
 
 ```sh
-pip install "git+https://github.com/avionicharshit-byte/tinycue"
+pip install tinycue
 ```
 
 Or from a checkout, which is what you want if you are going to change it:
