@@ -68,12 +68,13 @@ examples *and* honest about its own confidence with a clear "unsure" path *and* 
   reading the same float16 weights and 2.3e-04 against Python's own float32. Mean 7.5 microseconds
   a sentence on an M1 MacBook Air. Blob 205 KB for the smart home model, 263 KB for the robot one.
   The format is in `docs/model-format.md`.
-- [x] **M3**: ESP32 demo with the round display and the "did you mean" screen. Re-measured on the
-  format 2 blob: 588,492 bytes of flash (44% of the app partition), 40,884 bytes of static RAM,
-  310,496 bytes of heap left, and 2,995 to 7,866 microseconds a sentence, mean 5,106. All 31 board
-  sentences matched the desktop C tool and Python. On the format 1 blob it was 540,632 bytes of
-  flash, 40,828 of static RAM and a mean of 4,376. Numbers in
-  `demo/esp32_round/board-results.md`. The screen drawing is untested by eye.
+- [x] **M3**: ESP32 demo with the round display and the "did you mean" screen. Re-measured on
+  2026-09-20 after the screen moved to LVGL 9.6.0: 930,492 bytes of flash (71% of the app
+  partition), 119,660 bytes of static RAM, 231,684 bytes of heap left, and 3,159 to 7,742
+  microseconds a sentence, mean 5,153. All 31 board sentences matched the desktop C tool to six
+  decimals. LVGL is 342,052 of those flash bytes and 78,776 of the RAM; the parse did not move.
+  Before LVGL, on the same blob, it was 588,492 bytes of flash, 40,884 of static RAM and a mean of
+  5,106. Numbers in `demo/esp32_round/board-results.md`. The screen has now been looked at.
 - [x] **M3b**: a second chip, to prove the runtime is portable and not quietly written for the
   ESP32. An NXP FRDM-MCXN236, Arm Cortex-M33 at 150 MHz, bare metal, no RTOS. Re-measured on the
   format 2 blob: 289,064 bytes of flash (28%), 21,032 bytes of static RAM, and 2,524 to 8,455

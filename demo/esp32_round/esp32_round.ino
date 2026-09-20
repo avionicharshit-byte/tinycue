@@ -1,14 +1,13 @@
 // tinycue on a classic ESP32 with a 1.28 inch round GC9A01 display.
 //
-// Type a sentence into the serial port at 115200. The board reads it with the tinycue
-// C runtime, prints one JSON line back, and draws the answer on the round screen.
-// No Wi-Fi, no cloud, nothing leaves the board.
+// Type a sentence into the serial port at 115200. The board reads it with the
+// tinycue C runtime, prints one JSON line back, and draws the answer on the
+// round screen. No Wi-Fi, no cloud, nothing leaves the board.
 //
-// Wiring: SCL 18, SDA 23, DC 22, CS 5, RST 4, no backlight pin.
+// Wiring: SCL 18, SDA 23, DC 22, CS 5, RST 4, no backlight pin. The panel and
+// every pixel of the layout live in ui.cpp; this file is serial and tinycue.
 // The runtime and the model are copies. Refresh them with `make demo-sync`.
-#include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_GC9A01A.h>
+#include "ui.h"
 
 extern "C" {
 #include "tinycue.h"
@@ -18,14 +17,8 @@ extern "C" {
 // Nothing here passes a struct to a function on purpose. Arduino writes its own
 // prototypes and they break when a function takes a type declared further down.
 
-#define TFT_DC 22
-#define TFT_CS 5
-#define TFT_RST 4
-
 #define LINE_BYTES 160
 #define SCRATCH_BYTES 16384
-
-static Adafruit_GC9A01A tft(TFT_CS, TFT_DC, TFT_RST);
 
 static tcue_model model;
 static tcue_result result;
@@ -37,180 +30,90 @@ static int lineLen = 0;
 static char heard[LINE_BYTES];
 static unsigned long parseMicros = 0;
 
-static const uint16_t GREEN = 0x2606;
-static const uint16_t AMBER = 0xFD00;
-static const uint16_t GREY = 0x8410;
-static const uint16_t TRACK = 0x2104;
+static char valueText[96];
+static char footText[64];
 
-// ------------------------------------------------------------------ drawing
+// ------------------------------------------------------------------- drawing
 
-static void centred(const char *text, int y, int size, uint16_t colour) {
-  int width = (int)strlen(text) * 6 * size;
-  int x = 120 - width / 2;
-  if (x < 4) x = 4;
-  tft.setTextSize(size);
-  tft.setTextColor(colour);
-  tft.setCursor(x, y);
-  tft.print(text);
-}
-
-// A ring around the rim, filled clockwise from the top in proportion to `fraction`.
-static void ring(float fraction, uint16_t on, uint16_t off) {
-  const int segments = 72;
-  if (fraction < 0) fraction = 0;
-  if (fraction > 1) fraction = 1;
-  int lit = (int)(fraction * segments + 0.5f);
-  for (int i = 0; i < segments; i++) {
-    float a0 = (i * 5.0f - 90.0f) * 0.01745329f;
-    float a1 = (i * 5.0f - 90.0f + 4.2f) * 0.01745329f;
-    int x0 = 120 + (int)(112 * cosf(a0)), y0 = 120 + (int)(112 * sinf(a0));
-    int x1 = 120 + (int)(112 * cosf(a1)), y1 = 120 + (int)(112 * sinf(a1));
-    int u0 = 120 + (int)(119 * cosf(a0)), v0 = 120 + (int)(119 * sinf(a0));
-    int u1 = 120 + (int)(119 * cosf(a1)), v1 = 120 + (int)(119 * sinf(a1));
-    uint16_t colour = i < lit ? on : off;
-    tft.fillTriangle(x0, y0, u0, v0, u1, v1, colour);
-    tft.fillTriangle(x0, y0, u1, v1, x1, y1, colour);
-  }
-}
-
-// The words the board heard, wrapped to the width of the circle, at most three lines.
-static int wrapped(const char *text, int top, uint16_t colour) {
-  const int perLine = 26;
-  char buffer[32];
-  int start = 0;
-  int drawn = 0;
-  int length = (int)strlen(text);
-
-  while (start < length && drawn < 3) {
-    int take = length - start;
-    if (take > perLine) {
-      take = perLine;
-      int back = take;
-      while (back > 0 && text[start + back] != ' ') back--;
-      if (back > 6) take = back;
+// Which of the six drawings fits this command. `show` splits on what it was
+// asked for, so the temperature gets a thermometer and the time a clock.
+static int iconFor() {
+  if (strcmp(result.command, "set_light") == 0) return UI_ICON_BULB;
+  if (strcmp(result.command, "set_fan") == 0) return UI_ICON_FAN;
+  if (strcmp(result.command, "set_timer") == 0) return UI_ICON_CLOCK;
+  if (strcmp(result.command, "show") == 0) {
+    for (int i = 0; i < result.slot_count; i++) {
+      const char *text = result.slots[i].text;
+      if (!text) continue;
+      if (strcmp(text, "temperature") == 0) return UI_ICON_THERMO;
+      if (strcmp(text, "humidity") == 0) return UI_ICON_DROP;
     }
-    memcpy(buffer, text + start, (size_t)take);
-    buffer[take] = 0;
-    centred(buffer, top + drawn * 11, 1, colour);
-    drawn++;
-    start += take;
-    while (start < length && text[start] == ' ') start++;
+    return UI_ICON_CLOCK;
   }
-  return top + drawn * 11;
+  return UI_ICON_CROSS;
 }
 
-// A small drawn state for the command, so the screen says something without reading.
-static void icon(const char *command, const char *value, int number, bool isNumber) {
-  bool on = value != NULL && strcmp(value, "on") == 0;
-  bool up = value != NULL && strcmp(value, "up") == 0;
+// The big line: the slot values, "10 minutes" for a number and "bedroom on"
+// for two words. Slots come back in the order the sentence used them, which
+// reads backwards as often as not ("on bedroom"), so the screen puts them in
+// slot name order instead, which is stable whatever the sentence looked like.
+static void buildValue() {
+  int order[TCUE_MAX_SLOTS];
+  int count = result.slot_count < 3 ? result.slot_count : 3;
 
-  if (strcmp(command, "set_light") == 0) {
-    uint16_t colour = on ? GC9A01A_YELLOW : GREY;
-    tft.fillCircle(120, 176, 13, colour);
-    tft.fillRect(114, 188, 12, 6, colour);
-    if (on) {
-      for (int i = 0; i < 8; i++) {
-        float a = i * 0.7853982f;
-        tft.drawLine(120 + (int)(18 * cosf(a)), 176 + (int)(18 * sinf(a)),
-                     120 + (int)(24 * cosf(a)), 176 + (int)(24 * sinf(a)), colour);
-      }
+  for (int i = 0; i < count; i++) order[i] = i;
+  for (int i = 1; i < count; i++) {
+    int pick = order[i];
+    int j = i - 1;
+    while (j >= 0 && strcmp(result.slots[order[j]].name, result.slots[pick].name) > 0) {
+      order[j + 1] = order[j];
+      j--;
     }
-    return;
+    order[j + 1] = pick;
   }
-  if (strcmp(command, "set_fan") == 0) {
-    uint16_t colour = up ? GC9A01A_CYAN : GREY;
-    int tip = up ? 162 : 192;
-    int base = up ? 192 : 162;
-    tft.drawLine(120, base, 120, tip, colour);
-    tft.drawLine(120, tip, 110, up ? 172 : 182, colour);
-    tft.drawLine(120, tip, 130, up ? 172 : 182, colour);
-    return;
-  }
-  if (isNumber) {
-    char buffer[12];
-    snprintf(buffer, sizeof buffer, "%d", number);
-    centred(buffer, 168, 3, GC9A01A_WHITE);
-    tft.drawCircle(120, 178, 26, GREY);
-    return;
-  }
-  if (value != NULL) {
-    centred(value, 176, 2, GC9A01A_CYAN);
-  }
-}
 
-static void drawIdle() {
-  tft.fillScreen(GC9A01A_BLACK);
-  ring(1.0f, TRACK, TRACK);
-  centred("tinycue", 104, 3, GC9A01A_WHITE);
-  centred("type a command", 140, 1, GREY);
-  centred("offline, on this chip", 156, 1, GREY);
+  valueText[0] = 0;
+  for (int i = 0; i < count; i++) {
+    const tcue_slot *slot = &result.slots[order[i]];
+    char one[40];
+    if (slot->is_number) {
+      snprintf(one, sizeof one, "%d %s", (int)slot->number, slot->name);
+    } else {
+      snprintf(one, sizeof one, "%s", slot->text ? slot->text : "?");
+    }
+    if (valueText[0] != 0) strncat(valueText, " ", sizeof valueText - strlen(valueText) - 1);
+    strncat(valueText, one, sizeof valueText - strlen(valueText) - 1);
+  }
 }
 
 static void drawAnswer() {
-  const char *value = NULL;
-  int number = 0;
-  bool isNumber = false;
-  char buffer[48];
-  uint16_t rim;
-  int y;
-
-  if (result.slot_count > 0) {
-    value = result.slots[0].text;
-    number = (int)result.slots[0].number;
-    isNumber = result.slots[0].is_number != 0;
-  }
+  int percent = (int)(result.confidence * 100.0f + 0.5f);
+  int permille = (int)(result.confidence * 1000.0f + 0.5f);
 
   if (result.is_none) {
-    rim = GREY;
-  } else if (result.unsure) {
-    rim = AMBER;
-  } else {
-    rim = GREEN;
-  }
-
-  tft.fillScreen(GC9A01A_BLACK);
-  ring((float)result.confidence, rim, TRACK);
-  y = wrapped(heard, 44, GREY);
-
-  if (result.is_none) {
-    centred("Not a command", 108, 2, GREY);
-    centred("nothing to do", 136, 1, GREY);
+    snprintf(valueText, sizeof valueText, "not a command");
+    snprintf(footText, sizeof footText, "nothing to do");
+    ui_answer(heard, valueText, footText, UI_NONE, UI_ICON_CROSS, permille);
     return;
   }
 
   if (result.unsure) {
-    centred("Did you mean", y + 8, 1, AMBER);
-    centred(result.command, y + 22, 2, AMBER);
-    snprintf(buffer, sizeof buffer, "%d%% sure", (int)(result.confidence * 100 + 0.5));
-    centred(buffer, y + 44, 1, AMBER);
-    if (result.unknown_count > 0) {
-      snprintf(buffer, sizeof buffer, "%d new word%s", result.unknown_count,
-               result.unknown_count == 1 ? "" : "s");
-      centred(buffer, y + 58, 1, GREY);
-    }
+    snprintf(valueText, sizeof valueText, "%s", result.command);
+    snprintf(footText, sizeof footText, "did you mean, %d%% sure", percent);
+    ui_answer(heard, valueText, footText, UI_UNSURE, iconFor(), permille);
     return;
   }
 
-  centred(result.command, y + 10, 2, GC9A01A_WHITE);
-
-  buffer[0] = 0;
-  for (int i = 0; i < result.slot_count && i < 3; i++) {
-    char one[24];
-    if (result.slots[i].is_number) {
-      snprintf(one, sizeof one, "%s=%d", result.slots[i].name, (int)result.slots[i].number);
-    } else {
-      snprintf(one, sizeof one, "%s=%s", result.slots[i].name,
-               result.slots[i].text ? result.slots[i].text : "?");
-    }
-    if (buffer[0] != 0) strncat(buffer, " ", sizeof buffer - strlen(buffer) - 1);
-    strncat(buffer, one, sizeof buffer - strlen(buffer) - 1);
+  buildValue();
+  if (valueText[0] == 0) {
+    snprintf(valueText, sizeof valueText, "%s", result.command);
   }
-  if (buffer[0] != 0) centred(buffer, y + 32, 1, GC9A01A_CYAN);
   if (result.missing_count > 0) {
-    snprintf(buffer, sizeof buffer, "need %s", result.missing[0]);
-    centred(buffer, y + 44, 1, AMBER);
+    snprintf(footText, sizeof footText, "%s, needs %s", result.command, result.missing[0]);
+  } else {
+    snprintf(footText, sizeof footText, "%s  %d%% sure", result.command, percent);
   }
-  icon(result.command, value, number, isNumber);
+  ui_answer(heard, valueText, footText, UI_OK, iconFor(), permille);
 }
 
 // ------------------------------------------------------------------- serial
@@ -294,9 +197,7 @@ static void handle(const char *text) {
     Serial.print(",\"heap\":");
     Serial.print((unsigned long)ESP.getFreeHeap());
     Serial.println('}');
-    tft.fillScreen(GC9A01A_BLACK);
-    ring(1.0f, GREY, GREY);
-    centred("cannot read that", 112, 1, GREY);
+    ui_answer(heard, "cannot read that", tcue_error(status), UI_NONE, UI_ICON_CROSS, 1000);
     return;
   }
 
@@ -311,19 +212,18 @@ void setup() {
 
   Serial.begin(115200);
   delay(50);
-  tft.begin(27000000);
-  tft.fillScreen(GC9A01A_BLACK);
+  ui_begin();
 
   status = tcue_init(&model, tcue_model_data, tcue_model_data_len);
   if (status != TCUE_OK) {
-    centred("bad model", 112, 2, GC9A01A_RED);
+    ui_answer("", "bad model", tcue_error(status), UI_NONE, UI_ICON_CROSS, 1000);
     Serial.print("{\"error\":\"");
     Serial.print(tcue_error(status));
     Serial.println("\"}");
     return;
   }
   if (tcue_scratch_size(&model) > sizeof scratch) {
-    centred("scratch too small", 112, 1, GC9A01A_RED);
+    ui_answer("", "scratch too small", "rebuild", UI_NONE, UI_ICON_CROSS, 1000);
     Serial.println("{\"error\":\"scratch too small\"}");
     return;
   }
@@ -336,7 +236,6 @@ void setup() {
   Serial.print(",\"heap\":");
   Serial.print((unsigned long)ESP.getFreeHeap());
   Serial.println('}');
-  drawIdle();
 }
 
 void loop() {
@@ -344,7 +243,11 @@ void loop() {
     char c = (char)Serial.read();
     if (c == '\n') {
       line[lineLen] = 0;
-      if (ready && lineLen > 0) {
+      if (ready && strcmp(line, "!idle") == 0) {
+        // Back to the waiting screen, so a recording can start from it.
+        ui_idle();
+        Serial.println("{\"idle\":true}");
+      } else if (ready && lineLen > 0) {
         handle(line);
       }
       lineLen = 0;
@@ -352,5 +255,5 @@ void loop() {
       line[lineLen++] = c;
     }
   }
-  delay(2);
+  ui_tick();
 }

@@ -66,13 +66,14 @@ part with about 300 KB of free flash and 12 KB of RAM; the rest is [docs/install
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/boards-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="docs/assets/boards-light.svg">
-    <img alt="Two boards. A classic ESP32, Xtensa LX6 at 240 MHz: 588 KB of flash for the whole image, 41 KB of static RAM, 5.1 ms per sentence. An NXP FRDM-MCXN236, Arm Cortex-M33 at 150 MHz: 289 KB of flash for the whole image, 21 KB of static RAM, 5.1 ms per sentence. Same runtime, same 249 KB blob, and both answered all 31 test sentences the same way as the desktop build." src="docs/assets/boards-light.svg" width="880">
+    <img alt="Two boards. A classic ESP32, Xtensa LX6 at 240 MHz: 345 KB of flash for the whole image, 34 KB of static RAM, 5.1 ms per sentence. An NXP FRDM-MCXN236, Arm Cortex-M33 at 150 MHz: 289 KB of flash for the whole image, 21 KB of static RAM, 5.1 ms per sentence. Same runtime, same 249 KB blob, and both answered all 31 test sentences the same way as the desktop build." src="docs/assets/boards-light.svg" width="880">
   </picture>
 </p>
 
 Same `runtime/tinycue.c`, same 249 KB smart home blob, and no file in `runtime/` touched to reach
-the second chip. The flash figures are whole images, so they carry the ESP32's display library and
-the NXP board's drivers too. Per-sentence tables:
+the second chip. Both figures are whole flashable images: the ESP32 one is the serial example with
+no screen on it, the NXP one carries that board's drivers. The round display demo is larger again,
+because LVGL is in it. Per-sentence tables:
 [ESP32](demo/esp32_round/board-results.md), [FRDM-MCXN236](demo/nxp_mcxn236/board-results.md).
 
 ## How it works

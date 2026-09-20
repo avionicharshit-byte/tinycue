@@ -504,7 +504,7 @@ def unsure(theme_name: str) -> str:
 BOARDS_W, BOARDS_H = 960, 214
 BOARD_CARDS = [
     ("classic ESP32", "Xtensa LX6, 240 MHz",
-     [("flash", "588 KB"), ("ram", "41 KB"), ("per sentence", "5.1 ms")]),
+     [("flash", "345 KB"), ("ram", "34 KB"), ("per sentence", "5.1 ms")]),
     ("NXP FRDM-MCXN236", "Arm Cortex-M33, 150 MHz",
      [("flash", "289 KB"), ("ram", "21 KB"), ("per sentence", "5.1 ms")]),
 ]
@@ -534,8 +534,8 @@ def boards(theme_name: str) -> str:
     return svg_document(
         "boards", BOARDS_W, BOARDS_H, theme_name,
         "tinycue measured on two microcontrollers",
-        "Two cards. A classic ESP32, Xtensa LX6 at 240 MHz: 588 KB of flash for the whole image, "
-        "41 KB of static RAM, 5.1 ms per sentence. An NXP FRDM-MCXN236, Arm Cortex-M33 at 150 "
+        "Two cards. A classic ESP32, Xtensa LX6 at 240 MHz: 345 KB of flash for the whole image, "
+        "34 KB of static RAM, 5.1 ms per sentence. An NXP FRDM-MCXN236, Arm Cortex-M33 at 150 "
         "MHz: 289 KB of flash for the whole image, 21 KB of static RAM, 5.1 ms per sentence. "
         "Same runtime, same 249 KB blob, and both boards answered all 31 test sentences the same "
         "way as the desktop build.",
