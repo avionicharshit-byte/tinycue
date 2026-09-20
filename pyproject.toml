@@ -4,9 +4,9 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tinycue"
-version = "0.1.0"
+version = "0.1.1"
 description = "Offline command understanding for tiny devices, under 1 MB"
-readme = "README.md"
+readme = "docs/pypi-readme.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Harshit Dev" }]

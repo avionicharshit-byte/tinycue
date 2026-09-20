@@ -23,7 +23,7 @@ Either way you get a `tinycue` command:
 
 ```sh
 $ tinycue --version
-tinycue 0.1.0
+tinycue 0.1.1
 ```
 
 The wheel carries the language word lists, the starter templates and the two C runtime
